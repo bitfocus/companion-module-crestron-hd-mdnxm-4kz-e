@@ -1,16 +1,16 @@
 {
-	"id": "your-module-name",
-	"name": "your-module-name",
-	"shortname": "module-shortname",
-	"description": "A short one line description of your module",
+	"id": "crestron-hd-mdnxm-4kz-e",
+	"name": "crestron-hd-mdnxm-4kz-e",
+	"shortname": "HD-MDNXM-4KZ-E",
+	"description": "Crestron HD-MDNXM-4KZ-E Switcher",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/bitfocus/companion-module-your-module-name.git",
-	"bugs": "https://github.com/bitfocus/companion-module-your-module-name/issues",
+	"repository": "git+https://github.com/phillipivan/companion-module-crestron-HD-MDNXM-4KZ-E.git",
+	"bugs": "https://github.com/phillipivan/companion-module-crestron-HD-MDNXM-4KZ-E/issues",
 	"maintainers": [
 		{
-			"name": "Your name",
-			"email": "Your email"
+			"name": "Phillip Ivan Pietruschka",
+			"email": "ivanpietruschka@gmail.com"
 		}
 	],
 	"runtime": {
@@ -20,7 +20,7 @@
 		"entrypoint": "../dist/main.js"
 	},
 	"legacyIds": [],
-	"manufacturer": "Your company",
-	"products": ["Your product"],
+	"manufacturer": "Crestron",
+	"products": ["HD-MDNXM-4KZ-E"],
 	"keywords": []
 }

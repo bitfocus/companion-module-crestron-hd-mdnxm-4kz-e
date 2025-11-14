@@ -2,7 +2,7 @@ import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 
 export interface ModuleConfig {
 	host: string
-	port: number
+	selfSigned: boolean
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
@@ -10,18 +10,16 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 		{
 			type: 'textinput',
 			id: 'host',
-			label: 'Target IP',
+			label: 'Host',
 			width: 8,
-			regex: Regex.IP,
+			regex: Regex.HOSTNAME,
 		},
 		{
-			type: 'number',
-			id: 'port',
-			label: 'Target Port',
+			type: 'checkbox',
+			id: 'selfSigned',
+			label: 'Disable certificate validation',
 			width: 4,
-			min: 1,
-			max: 65535,
-			default: 8000,
+			default: false,
 		},
 	]
 }

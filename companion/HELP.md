@@ -1,3 +1,3 @@
-## Your module
+## Crestron HD-MDNXM-4KZ-E
 
-Write some help for your users here!
+[API Docs](https://sdkcon78221.crestron.com/sdk/HD-MDNXM-4KZ-E_REST_API/Content/Topics/Home.htm)
