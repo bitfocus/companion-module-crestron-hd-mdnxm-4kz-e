@@ -44,6 +44,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	// When module gets deleted
 	async destroy(): Promise<void> {
 		this.debug(`destroy ${this.id}:${this.label}`)
+		await this.logout()
 		this.statusManager.destroy()
 		this.controller.abort()
 		this.queue.clear()
@@ -135,6 +136,15 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		} catch (err: any) {
 			this.log('error', JSON.stringify(err))
 			return false
+		}
+	}
+
+	private async logout(): Promise<void> {
+		try {
+			await this.get(ApiCalls.logout)
+			await this.jar.removeAllCookies()
+		} catch (err: any) {
+			this.log('warn', `Logout failed ${err}`)
 		}
 	}
 
