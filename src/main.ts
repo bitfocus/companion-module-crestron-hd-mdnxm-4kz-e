@@ -1,18 +1,22 @@
 import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
-import { GetConfigFields, type ModuleConfig } from './config.js'
+import { GetConfigFields, type ModuleConfig, type ModuleSecrets } from './config.js'
 import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { StatusManager } from './status.js'
 import { ApiCalls, type ApiCallValues } from './api.js'
+import { HttpStatusCodes } from './errors.js'
+import type { MsgData } from './types.js'
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import { CookieJar } from 'tough-cookie'
 import { wrapper } from 'axios-cookiejar-support'
 import PQueue from 'p-queue'
+import url from 'node:url'
 
-export class ModuleInstance extends InstanceBase<ModuleConfig> {
+export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	private config!: ModuleConfig // Setup in init()
+	private secrets!: ModuleSecrets
 	private axiosClient!: AxiosInstance
 	private jar = new CookieJar()
 	private queue = new PQueue({ concurrency: 1, interval: 50, intervalCap: 1 })
@@ -25,22 +29,22 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	public debug(msg: string | object): void {
-		//this.cpuUsage = process.cpuUsage(this.cpuUsage)
 		if (this.config.verbose) {
 			if (typeof msg == 'object') msg = JSON.stringify(msg)
 			this.log('debug', `[${new Date().toJSON()}] ${msg}`)
 		}
 	}
 
-	async init(config: ModuleConfig): Promise<void> {
+	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
-
+		this.secrets = secrets
 		this.updateActions() // export actions
 		this.updateFeedbacks() // export feedbacks
 		this.updateVariableDefinitions() // export variable definitions
 
-		this.configUpdated(config).catch(() => {})
+		this.configUpdated(config, secrets).catch(() => {})
 	}
+
 	// When module gets deleted
 	async destroy(): Promise<void> {
 		this.debug(`destroy ${this.id}:${this.label}`)
@@ -50,11 +54,13 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.queue.clear()
 	}
 
-	async configUpdated(config: ModuleConfig): Promise<void> {
+	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets): Promise<void> {
+		this.debug(config)
+		this.debug(secrets)
 		this.controller.abort()
 		this.config = config
+		this.secrets = secrets
 		process.title = this.label
-
 		this.statusManager.updateStatus(InstanceStatus.Connecting)
 		this.controller = new AbortController()
 		this.queue.clear()
@@ -96,7 +102,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	public async post(
 		path: ApiCallValues,
-		data: string | undefined,
+		data: MsgData | undefined,
 		headers: Record<string, string> = {},
 	): Promise<AxiosResponse<any, any> | AxiosError<unknown, any>> {
 		return await this.queue.add(async () => {
@@ -107,9 +113,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 					this.statusManager.updateStatus(InstanceStatus.Ok)
 					return response
 				})
-				.catch((error: AxiosError) => {
-					this.statusManager.updateStatus(InstanceStatus.ConnectionFailure, error.code)
-					this.log('error', JSON.stringify(error))
+				.catch((error: any) => {
+					if (error instanceof AxiosError) {
+						let status: InstanceStatus = InstanceStatus.UnknownError
+						if (error.status !== undefined && error.status in HttpStatusCodes)
+							status = HttpStatusCodes[error.status as keyof typeof HttpStatusCodes]
+						this.statusManager.updateStatus(status, error.code)
+						this.log('error', JSON.stringify(error))
+					}
 					return error
 				})
 		})
@@ -117,19 +128,21 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	private async login(): Promise<boolean> {
 		try {
+			this.CREST_XSRF_TOKEN = ''
 			const trackIdRequest = await this.get(ApiCalls.login)
 			if (trackIdRequest instanceof AxiosError) throw trackIdRequest
 			this.debug(`Returned Headers: \n${JSON.stringify(trackIdRequest.headers)}`)
 			this.debug(`Cookies: ${JSON.stringify(this.jar.getCookiesSync(`https://${this.config.host}`))}`)
-			const loginRequest = await this.post(
-				ApiCalls.login,
-				`login=${this.config.user}&&passwd=${this.config.passwd}\r\n`,
-				{
-					Origin: `https://${this.config.host}`,
-					Referer: `https://${this.config.host}${ApiCalls.login}`,
-					'Content-Type': `text/plain`,
-				},
-			)
+
+			const params = new url.URLSearchParams()
+			params.append('login', this.config.user)
+			params.append('passwd', this.secrets.passwd)
+			this.debug(params.toString())
+			const loginRequest = await this.post(ApiCalls.login, params.toString(), {
+				Origin: `https://${this.config.host}`,
+				Referer: `https://${this.config.host}${ApiCalls.login}`,
+				'Content-Type': `application/x-www-form-urlencoded`,
+			})
 			this.debug(`Login request: ${JSON.stringify(loginRequest)}`)
 			console.log(loginRequest)
 			return true

@@ -3,9 +3,12 @@ import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 export interface ModuleConfig {
 	host: string
 	user: string
-	passwd: string
 	selfSigned: boolean
 	verbose: boolean
+}
+
+export interface ModuleSecrets {
+	passwd: string
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
@@ -13,9 +16,10 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 		{
 			type: 'textinput',
 			id: 'host',
-			label: 'Host',
+			label: 'Host IP',
 			width: 8,
-			regex: Regex.HOSTNAME,
+			regex: Regex.IP,
+			required: true,
 		},
 		{
 			type: 'textinput',
@@ -23,6 +27,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Username',
 			width: 8,
 			regex: Regex.SOMETHING,
+			required: true,
 		},
 		{
 			type: 'secret-text',
@@ -30,6 +35,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Password',
 			width: 8,
 			regex: Regex.SOMETHING,
+			required: true,
 		},
 		{
 			type: 'checkbox',

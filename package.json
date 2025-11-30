@@ -23,7 +23,7 @@
 		"yarn": "^4"
 	},
 	"dependencies": {
-		"@companion-module/base": "~1.13.4",
+		"@companion-module/base": "~1.13.5",
 		"axios": "^1.13.2",
 		"axios-cookiejar-support": "^6.0.5",
 		"es-toolkit": "^1.42.0",
@@ -37,7 +37,7 @@
 		"eslint": "^9.39.1",
 		"husky": "^9.1.7",
 		"lint-staged": "^16.2.7",
-		"prettier": "^3.7.1",
+		"prettier": "^3.7.3",
 		"rimraf": "^6.1.2",
 		"typescript": "~5.9.3",
 		"typescript-eslint": "^8.48.0"
@@ -51,5 +51,5 @@
 			"yarn lint:raw --fix"
 		]
 	},
-	"packageManager": "yarn@4.11.0"
+	"packageManager": "yarn@4.12.0"
 }
