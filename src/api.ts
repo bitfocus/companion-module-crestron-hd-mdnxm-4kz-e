@@ -5,3 +5,18 @@ export const ApiCalls = {
 } as const satisfies Record<string, string>
 
 export type ApiCallValues = (typeof ApiCalls)[keyof typeof ApiCalls]
+
+export const wsApiGetCalls = {
+	avioV2: 'Device/AvioV2',
+	avioV2Inputs: 'Device/AvioV2/Inputs',
+	avioV2Outputs: 'Device/AvioV2/Outputs',
+	routingMatrix: '/Device/AvMatrixRoutingV2',
+	routingMatrixConfig: '/Device/AvMatrixRoutingV2/Config',
+	routingMatrixRoutes: '/Device/AvMatrixRoutingV2/Routes',
+} as const satisfies Record<string, string>
+
+export const wsApiPostCalls = {
+	routeVideo: (output: string, source: string): string => {
+		return JSON.stringify({ Device: { AvMatrixRouting: { Routes: { [output]: { VideoSource: source } } } } })
+	},
+} satisfies Record<string, (output: string, source: string) => string>

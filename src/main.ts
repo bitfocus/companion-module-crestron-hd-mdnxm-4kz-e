@@ -5,7 +5,7 @@ import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { StatusManager } from './status.js'
-import { ApiCalls, type ApiCallValues } from './api.js'
+import { ApiCalls, type ApiCallValues, wsApiGetCalls } from './api.js'
 import { HttpStatusCodes } from './errors.js'
 import type { MsgData } from './types.js'
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
@@ -53,11 +53,12 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	// When module gets deleted
 	async destroy(): Promise<void> {
 		this.debug(`destroy ${this.id}:${this.label}`)
-		await this.logout()
-		this.#statusManager.destroy()
-		this.#controller.abort()
 		this.#queue.clear()
 		this.closeWebSocketConnection()
+		await this.logout()
+
+		this.#controller.abort()
+		this.#statusManager.destroy()
 	}
 
 	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets): Promise<void> {
@@ -69,7 +70,6 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		this.#statusManager.updateStatus(InstanceStatus.Connecting)
 		this.#controller = new AbortController()
 		this.#queue.clear()
-		process.title = this.label
 		process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = config.selfSigned ? '0' : '1'
 		await this.createClient(config.host)
 		if (await this.login()) {
@@ -93,12 +93,11 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	private closeWebSocketConnection(): void {
 		if (this.#socket) {
-			this.#socket.terminate()
 			this.#socket.close(1000, 'Resetting connection')
-			this.#socket.removeEventListener('open', () => {})
-			this.#socket.removeEventListener('message', () => {})
-			this.#socket.removeEventListener('close', () => {})
-			this.#socket.removeEventListener('error', () => {})
+			this.#socket.removeAllListeners('open')
+			this.#socket.removeAllListeners('message')
+			this.#socket.removeAllListeners('close')
+			this.#socket.removeAllListeners('error')
 		}
 		if (this.#pingTimer) {
 			clearTimeout(this.#pingTimer)
@@ -106,12 +105,17 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		}
 	}
 
+	private startWsPing(): void {
+		if (this.#pingTimer) clearTimeout(this.#pingTimer)
+		this.#pingTimer = setTimeout(() => this.sendWsPing(), PING_INTERVAL)
+	}
+
 	private sendWsPing(): void {
 		if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
 			this.debug('Sending WebSocket Ping')
-			this.#socket.ping()
+			this.wsSend(wsApiGetCalls.routingMatrixRoutes, 0).catch(() => {})
 		}
-		this.#pingTimer = setTimeout(() => this.sendWsPing(), PING_INTERVAL)
+		this.startWsPing()
 	}
 
 	private createWebSocketConnection(host = this.#config.host): void {
@@ -142,7 +146,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		this.#socket.addEventListener('open', () => {
 			this.updateStatus(InstanceStatus.Ok, `WebSocket connected`)
 			this.log('info', `Connected to wss://${host}`)
-			this.sendWsPing()
+
+			//Initial queries
+			this.wsSend(wsApiGetCalls.avioV2).catch(() => {})
+			this.wsSend(wsApiGetCalls.routingMatrix).catch(() => {})
 		})
 		this.#socket.addEventListener('message', (event) => {
 			this.debug(`Message from websocket:\n${JSON.stringify(event.data)}`)
@@ -158,7 +165,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		})
 	}
 
-	public async get(path: ApiCallValues): Promise<AxiosResponse<any, any> | AxiosError<unknown, any>> {
+	public async get(
+		path: ApiCallValues,
+		priority: number = 0,
+	): Promise<AxiosResponse<any, any> | AxiosError<unknown, any>> {
 		return await this.#queue.add(
 			async () => {
 				return await this.#axiosClient
@@ -173,7 +183,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 						return error
 					})
 			},
-			{ signal: this.#controller.signal },
+			{ priority: priority, signal: this.#controller.signal },
 		)
 	}
 
@@ -181,6 +191,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		path: ApiCallValues,
 		data: MsgData | undefined,
 		headers: Record<string, string> = {},
+		priority: number = 1,
 	): Promise<AxiosResponse<any, any> | AxiosError<unknown, any>> {
 		return await this.#queue.add(
 			async () => {
@@ -208,14 +219,37 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 					})
 				return response
 			},
-			{ signal: this.#controller.signal },
+			{ priority: priority, signal: this.#controller.signal },
+		)
+	}
+
+	public async wsSend(data: string, priority: number = 1): Promise<void> {
+		return this.#queue.add(
+			async () => {
+				if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
+					this.#socket.send(data, (err) => {
+						if (err) {
+							this.log(
+								'warn',
+								`WebSocket failed to send ${data} with error ${typeof err == 'object' ? JSON.stringify(err) : err}`,
+							)
+						} else {
+							this.debug(`Sent WebSocket Message: ${data}`)
+							this.startWsPing()
+						}
+					})
+				} else {
+					this.log('warn', `WebSocket not open. Could not send ${data}`)
+				}
+			},
+			{ priority: priority, signal: this.#controller.signal },
 		)
 	}
 
 	private async login(): Promise<boolean> {
 		try {
 			this.#CREST_XSRF_TOKEN = ''
-			const trackIdRequest = await this.get(ApiCalls.login)
+			const trackIdRequest = await this.get(ApiCalls.login, 3)
 			if (trackIdRequest instanceof AxiosError) throw trackIdRequest
 			this.debug(`Returned Headers: \n${JSON.stringify(trackIdRequest.headers)}`)
 			this.debug(`Cookies: ${JSON.stringify(this.#jar.getCookiesSync(`https://${this.#config.host}`))}`)
@@ -223,12 +257,17 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			const params = new url.URLSearchParams()
 			params.append('login', this.#config.user)
 			params.append('passwd', this.#secrets.passwd)
-			//this.debug(params.toString())
-			const loginRequest = await this.post(ApiCalls.login, params, {
-				Origin: `https://${this.#config.host}`,
-				Referer: `https://${this.#config.host}${ApiCalls.login}`,
-				'Content-Type': `application/x-www-form-urlencoded`,
-			})
+
+			const loginRequest = await this.post(
+				ApiCalls.login,
+				params,
+				{
+					Origin: `https://${this.#config.host}`,
+					Referer: `https://${this.#config.host}${ApiCalls.login}`,
+					'Content-Type': `application/x-www-form-urlencoded`,
+				},
+				3,
+			)
 			if (loginRequest instanceof AxiosError) throw loginRequest
 			this.debug(
 				`Login request: ${JSON.stringify(loginRequest.statusText)}\n Returned Headers: \n${JSON.stringify(loginRequest.headers)}`,
@@ -243,7 +282,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	private async logout(): Promise<void> {
 		try {
 			this.closeWebSocketConnection()
-			await this.get(ApiCalls.logout)
+			await this.get(ApiCalls.logout, 2)
 			await this.#jar.removeAllCookies()
 		} catch (err: any) {
 			this.log('warn', `Logout failed ${err}`)
