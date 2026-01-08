@@ -1,14 +1,14 @@
 import * as z from 'zod'
 
-import { Input as InputString, Output as OutputString, Version } from './General.js'
+import { Input as InputString, Output as OutputString, Aux as AuxString, Version } from './General.js'
 
 export const GlobalEdid = z.string()
 
 export type GlobalEdid = z.infer<typeof GlobalEdid>
 
-export const GlobalEdidTypes = ['Copy', 'System', 'Custom'] as const satisfies string[]
+export const GlobalEdidTypes = ['copy', 'system', 'custom'] as const satisfies string[]
 
-export const GlobalEdidType = z.enum(GlobalEdidTypes)
+export const GlobalEdidType = z.enum(GlobalEdidTypes).or(z.string())
 
 export type GlobalEdidType = z.infer<typeof GlobalEdidType>
 
@@ -19,7 +19,7 @@ export const GlobalConfig = z.object({
 
 export type GlobalConfig = z.infer<typeof GlobalConfig>
 
-export const Id = z.string()
+export const Id = z.string().optional()
 
 export type Id = z.infer<typeof Id>
 
@@ -69,7 +69,7 @@ export const IsSyncDetected = z.boolean()
 
 export type IsSyncDetected = z.infer<typeof IsSyncDetected>
 
-export const IsSourceDetected = z.boolean()
+export const IsSourceDetected = z.boolean().optional()
 
 export type IsSourceDetected = z.infer<typeof IsSourceDetected>
 
@@ -77,7 +77,7 @@ export const IsInterlacedDetected = z.boolean()
 
 export type IsInterlacedDetected = z.infer<typeof IsInterlacedDetected>
 
-export const HorizontalResolution = z.int32().min(0).max(0xffff)
+export const HorizontalResolution = z.int32().min(0).max(0xffff).optional()
 
 export type HorizontalResolution = z.infer<typeof HorizontalResolution>
 
@@ -89,11 +89,11 @@ export const FramesPerSecond = HorizontalResolution
 
 export type FramesPerSecond = z.infer<typeof FramesPerSecond>
 
-export const AspectRatio = z.string()
+export const AspectRatio = z.string().optional()
 
 export type AspectRatio = z.infer<typeof AspectRatio>
 
-export const CurrentResolution = z.string()
+export const CurrentResolution = z.string().optional()
 
 export type CurrentResolution = z.infer<typeof CurrentResolution>
 
@@ -101,7 +101,7 @@ export const CurrentEdid = z.string()
 
 export type CurrentEdid = z.infer<typeof CurrentEdid>
 
-export const CurrentEdidType = z.enum(GlobalEdidTypes)
+export const CurrentEdidType = z.enum(GlobalEdidTypes).or(z.string())
 
 export type CurrentEdidType = z.infer<typeof CurrentEdidType>
 
@@ -167,7 +167,7 @@ export type SourceHdcp = z.infer<typeof SourceHdcp>
 
 export const SourceContentStreamTypes = ['Type 0', 'Type 1'] as const satisfies string[]
 
-export const SourceContentStreamType = z.enum(SourceContentStreamTypes)
+export const SourceContentStreamType = z.enum(SourceContentStreamTypes).or(z.string())
 
 export type SourceContentStreamType = z.infer<typeof SourceContentStreamType>
 
@@ -179,7 +179,7 @@ export type ColorSpace = z.infer<typeof ColorSpace>
 
 export const ColorDepths = ['Pixel8bit', 'Pixel10bit', 'Pixel12bit'] as const satisfies string[]
 
-export const ColorDepth = z.enum(ColorDepths)
+export const ColorDepth = z.enum(ColorDepths).or(z.string())
 
 export type ColorDepth = z.infer<typeof ColorDepth>
 
@@ -195,7 +195,7 @@ export type Cec = z.infer<typeof Cec>
 
 export const Status3Ds = ['Video2D', 'Video3D'] as const satisfies string[]
 
-export const Status3D = z.enum(Status3Ds)
+export const Status3D = z.enum(Status3Ds).or(z.string())
 
 export type Status3D = z.infer<typeof Status3D>
 
@@ -213,7 +213,7 @@ export const Digital = z.object({
 
 export type Digital = z.infer<typeof Digital>
 
-export const IsAudioSourceDetected = z.boolean()
+export const IsAudioSourceDetected = z.boolean().optional()
 
 export type IsAudioSourceDetected = z.infer<typeof IsAudioSourceDetected>
 
@@ -233,7 +233,7 @@ export const Formats = [
 	'HbrCompressed',
 ] as const satisfies string[]
 
-export const Format = z.enum(Formats)
+export const Format = z.enum(Formats).or(z.string())
 
 export type Format = z.infer<typeof Format>
 
@@ -241,7 +241,7 @@ export const SamplingFrequency = z.int32().min(0).max(0xffff)
 
 export type SamplingFrequency = z.infer<typeof SamplingFrequency>
 
-export const Gain = z.number().min(-100).max(100)
+export const Gain = z.number().min(-100).max(100).optional()
 
 export type Gain = z.infer<typeof Gain>
 
@@ -255,11 +255,11 @@ export const DigitalAudio = z.object({
 
 export type DigitalAudio = z.infer<typeof DigitalAudio>
 
-export const SpidifGain = z.number().min(-100).max(100)
+export const SpidifGain = z.number().min(-100).max(100).optional()
 
 export type SpidifGain = z.infer<typeof SpidifGain>
 
-export const AnalogGain = z.number().min(-100).max(100)
+export const AnalogGain = z.number().min(-100).max(100).optional()
 
 export type AnalogGain = z.infer<typeof AnalogGain>
 
@@ -301,7 +301,7 @@ export const InputPorts = z.record(PortString, InputPort)
 export type InputPorts = z.infer<typeof InputPorts>
 
 export const InputInfo = z.object({
-	Id: Id,
+	Id: Id.optional(),
 	Ports: InputPorts,
 })
 
@@ -327,35 +327,35 @@ export const OutputCapabilities = z.object({
 	IsStreamRoutingSupported: IsStreamRoutingSupported,
 })
 
-export const OutputPortTypes = ['Hdmi', 'Dm', 'Analog', 'DisplayPort'] as const satisfies string[]
+export const OutputPortTypes = ['Hdmi', 'Dm', 'Analog', 'DisplayPort', 'Audio'] as const satisfies string[]
 
-export const OutputPortType = z.enum(OutputPortTypes)
+export const OutputPortType = z.enum(OutputPortTypes).or(z.string())
 
 export type OutputPortType = z.infer<typeof OutputPortType>
 
-export const IsSinkConnected = z.boolean()
+export const IsSinkConnected = z.boolean().optional()
 
 export type IsSinkConnected = z.infer<typeof IsSinkConnected>
 
-export const OutputColorSpaces = ['RGB', 'YCbCr'] as const satisfies string[]
+export const OutputColorSpaces = ['RGB', 'YCbCr', 'UNKNOWN'] as const satisfies string[]
 
-export const OutputColorSpace = z.enum(OutputColorSpaces)
+export const OutputColorSpace = z.enum(OutputColorSpaces).or(z.string())
 
 export type OutputColorSpace = z.infer<typeof OutputColorSpace>
 
-export const OutputColorDepth = z.enum(ColorDepths)
+export const OutputColorDepth = z.enum(ColorDepths).or(z.string())
 
 export type OutputColorDepth = z.infer<typeof OutputColorDepth>
 
 export const OutputColorSpaceModes = ['Auto', 'ForceRgb', 'ForceYCbCr'] as const satisfies string[]
 
-export const OutputColorSpaceMode = z.enum(OutputColorSpaceModes)
+export const OutputColorSpaceMode = z.enum(OutputColorSpaceModes).or(z.string())
 
 export type OutputColorSpaceMode = z.infer<typeof OutputColorSpaceMode>
 
 export const OutputMaxColorDepths = ['Pixel8bit', 'Pixel10bit', 'Pixel12bit'] as const satisfies string[]
 
-export const OutputMaxColorDepth = z.enum(OutputMaxColorDepths)
+export const OutputMaxColorDepth = z.enum(OutputMaxColorDepths).or(z.string())
 
 export type OutputMaxColorDepth = z.infer<typeof OutputMaxColorDepth>
 
@@ -392,15 +392,16 @@ export const HdcpTransmitterModes = [
 	'Follow Input',
 	'Force Highest',
 	'Never Authenticate',
+	'N/A',
 ] as const satisfies string[]
 
 export const HdcpTransmitterMode = z.enum(HdcpTransmitterModes)
 
 export type HdcpTransmitterMode = z.infer<typeof HdcpTransmitterMode>
 
-export const HdcpSinkCapabilities = ['Unknown', 'HDCP 1.x', 'HDCP 2.x'] as const satisfies string[]
+export const HdcpSinkCapabilities = ['Unknown', 'HDCP 1.x', 'HDCP 2.x', 'Not Connected'] as const satisfies string[]
 
-export const HdcpSinkCapability = z.enum(HdcpReceiverCapabilities)
+export const HdcpSinkCapability = z.enum(HdcpReceiverCapabilities).or(z.string())
 
 export type HdcpSinkCapability = z.infer<typeof HdcpSinkCapability>
 
@@ -466,16 +467,16 @@ export const OutputPort = z.object({
 	PortType: OutputPortType,
 	IsSinkConnected: IsSinkConnected,
 	IsSourceDetected: IsSourceDetected,
-	ColorSpace: OutputColorSpace,
-	ColorDepth: OutputColorDepth,
-	ColorSpaceMode: OutputColorSpaceMode,
-	MaxColorDepth: OutputMaxColorDepth,
+	ColorSpace: OutputColorSpace.optional(),
+	ColorDepth: OutputColorDepth.optional(),
+	ColorSpaceMode: OutputColorSpaceMode.optional(),
+	MaxColorDepth: OutputMaxColorDepth.optional(),
 	HorizontalResolution: HorizontalResolution,
 	VerticalResolution: VerticalResolution,
 	FramesPerSecond: FramesPerSecond,
 	AspectRatio: AspectRatio,
 	CurrentResolution: CurrentResolution,
-	Digital: OutputDigital,
+	Digital: OutputDigital.partial().optional(),
 })
 
 export type OutputPort = z.infer<typeof OutputPort>
@@ -486,7 +487,7 @@ export type OutputPorts = z.infer<typeof OutputPorts>
 
 export const OutputInfo = z.object({
 	Id: Id,
-	Ports: OutputPort,
+	Ports: OutputPorts,
 })
 export type OutputInfo = z.infer<typeof OutputInfo>
 
@@ -499,7 +500,7 @@ export const Output = z.object({
 
 export type Output = z.infer<typeof Output>
 
-export const Outputs = z.record(OutputString, Output)
+export const Outputs = z.record(z.union([OutputString, AuxString]), Output)
 
 export type Outputs = z.infer<typeof Outputs>
 

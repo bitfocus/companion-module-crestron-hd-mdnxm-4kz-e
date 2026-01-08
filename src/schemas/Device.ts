@@ -2,12 +2,12 @@ import * as z from 'zod'
 import { zx } from '@traversable/zod'
 
 import { AvioV2 } from './AvioV2.js'
-import { AvRoutingMatrixV2 } from './AvRoutingMatrixV2.js'
+import { AvMatrixRoutingV2 } from './AvMatrixRoutingV2.js'
 
 export const Device = z.object({
 	Device: z.object({
 		AvioV2: AvioV2,
-		AvRoutingMatrixV2: AvRoutingMatrixV2,
+		AvMatrixRoutingV2: AvMatrixRoutingV2,
 	}),
 })
 

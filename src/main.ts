@@ -6,18 +6,20 @@ import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { StatusManager } from './status.js'
 import { ApiCalls, type ApiCallValues, wsApiGetCalls } from './api.js'
-import { HttpStatusCodes } from './errors.js'
 import type { MsgData } from './types.js'
+import { Crestron_HDMDNXM_4KZ } from './device.js'
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import { WebSocket } from 'ws'
 import { CookieJar } from 'tough-cookie'
 import { wrapper } from 'axios-cookiejar-support'
+import { ZodError } from 'zod'
 import PQueue from 'p-queue'
 import url from 'node:url'
 
 const PING_INTERVAL = 30000 // milliseconds
 
 export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
+	crestronDevice!: Crestron_HDMDNXM_4KZ
 	#config!: ModuleConfig // Setup in init()
 	#secrets!: ModuleSecrets
 	#axiosClient!: AxiosInstance
@@ -36,7 +38,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	public debug(msg: string | object): void {
 		if (this.#config.verbose) {
 			if (typeof msg == 'object') msg = JSON.stringify(msg)
-			this.log('debug', `[${new Date().toJSON()}] ${msg}`)
+			this.log('debug', `${msg}`)
 		}
 	}
 
@@ -62,21 +64,28 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	}
 
 	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets): Promise<void> {
-		this.debug(config)
-		this.debug(secrets)
+		this.#queue.clear()
 		this.#controller.abort()
+
 		this.#config = config
 		this.#secrets = secrets
+
 		this.#statusManager.updateStatus(InstanceStatus.Connecting)
 		this.#controller = new AbortController()
-		this.#queue.clear()
+
 		process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = config.selfSigned ? '0' : '1'
-		await this.createClient(config.host)
-		if (await this.login()) {
-			this.log('info', `Logged in to ${this.#config.host}`)
-			this.createWebSocketConnection(config.host)
-		} else {
-			this.#statusManager.updateStatus(InstanceStatus.BadConfig, `Can't login`)
+		try {
+			await this.createClient(config.host)
+			if (await this.login()) {
+				this.log('info', `Logged in to ${this.#config.host}`)
+				const deviceQuery = await this.httpsGet(ApiCalls.Device)
+				this.crestronDevice = Crestron_HDMDNXM_4KZ.createNewDevice(deviceQuery)
+				this.createWebSocketConnection(config.host)
+			} else {
+				this.#statusManager.updateStatus(InstanceStatus.BadConfig, `Can't login`)
+			}
+		} catch (err) {
+			this.handleError(err)
 		}
 	}
 
@@ -93,7 +102,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	private closeWebSocketConnection(): void {
 		if (this.#socket) {
-			this.#socket.close(1000, 'Resetting connection')
+			this.#socket.terminate()
+			//this.#socket.close(1000, 'Resetting connection')
 			this.#socket.removeAllListeners('open')
 			this.#socket.removeAllListeners('message')
 			this.#socket.removeAllListeners('close')
@@ -152,7 +162,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.wsSend(wsApiGetCalls.routingMatrix).catch(() => {})
 		})
 		this.#socket.addEventListener('message', (event) => {
-			this.debug(`Message from websocket:\n${JSON.stringify(event.data)}`)
+			this.debug(
+				`Message from websocket:\n${typeof event.data == 'object' ? JSON.stringify(event.data) : event.data.toString()}`,
+			)
 		})
 		this.#socket.addEventListener('error', (error) => {
 			this.log('error', `Error from websocket: ${error.message}`)
@@ -165,36 +177,30 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		})
 	}
 
-	public async get(
-		path: ApiCallValues,
-		priority: number = 0,
-	): Promise<AxiosResponse<any, any> | AxiosError<unknown, any>> {
+	public async httpsGet(path: ApiCallValues, priority: number = 0): Promise<AxiosResponse<any, any>> {
 		return await this.#queue.add(
 			async () => {
-				return await this.#axiosClient
-					.get(path)
-					.then((response: AxiosResponse<any, any>) => {
-						this.#statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
-						return response
-					})
-					.catch((error: AxiosError) => {
-						this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure, error.code)
-						this.log('error', String(error.cause))
-						return error
-					})
+				if (!this.#axiosClient) throw new Error('Axios Client not initialised')
+				return await this.#axiosClient.get(path).then((response: AxiosResponse<any, any>) => {
+					this.#statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
+					this.debug(`Successful HTTPS Get from path: ${path}\nResponse data:`)
+					this.debug(response.data)
+					return response
+				})
 			},
 			{ priority: priority, signal: this.#controller.signal },
 		)
 	}
 
-	public async post(
+	public async httpsPost(
 		path: ApiCallValues,
 		data: MsgData | undefined,
 		headers: Record<string, string> = {},
 		priority: number = 1,
-	): Promise<AxiosResponse<any, any> | AxiosError<unknown, any>> {
+	): Promise<AxiosResponse<any, any>> {
 		return await this.#queue.add(
 			async () => {
+				if (!this.#axiosClient) throw new Error('Axios Client not initialised')
 				if (this.#CREST_XSRF_TOKEN) headers[`CREST-XSRF-TOKEN`] = this.#CREST_XSRF_TOKEN
 				const response = await this.#axiosClient
 					.post(path, data, { headers: headers })
@@ -207,15 +213,11 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 							this.#CREST_XSRF_TOKEN = response.headers['CREST-XSRF-TOKEN']
 						}
 						this.#statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
+						this.debug(
+							`Successful HTTPS Post to path: ${path} with post data ${typeof data == 'object' ? JSON.stringify(data) : typeof data == 'undefined' ? '' : data?.toString()}\nResponse data:`,
+						)
+						this.debug(response.data)
 						return response
-					})
-					.catch((error: AxiosError) => {
-						let status: InstanceStatus = InstanceStatus.UnknownError
-						if (error.status && error.status in HttpStatusCodes)
-							status = HttpStatusCodes[error.status as keyof typeof HttpStatusCodes]
-						this.#statusManager.updateStatus(status, error.code)
-						this.log('error', JSON.stringify(error))
-						return error
 					})
 				return response
 			},
@@ -233,6 +235,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 								'warn',
 								`WebSocket failed to send ${data} with error ${typeof err == 'object' ? JSON.stringify(err) : err}`,
 							)
+							this.handleError(err)
 						} else {
 							this.debug(`Sent WebSocket Message: ${data}`)
 							this.startWsPing()
@@ -249,7 +252,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	private async login(): Promise<boolean> {
 		try {
 			this.#CREST_XSRF_TOKEN = ''
-			const trackIdRequest = await this.get(ApiCalls.login, 3)
+			const trackIdRequest = await this.httpsGet(ApiCalls.login, 3)
 			if (trackIdRequest instanceof AxiosError) throw trackIdRequest
 			this.debug(`Returned Headers: \n${JSON.stringify(trackIdRequest.headers)}`)
 			this.debug(`Cookies: ${JSON.stringify(this.#jar.getCookiesSync(`https://${this.#config.host}`))}`)
@@ -258,7 +261,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			params.append('login', this.#config.user)
 			params.append('passwd', this.#secrets.passwd)
 
-			const loginRequest = await this.post(
+			const loginRequest = await this.httpsPost(
 				ApiCalls.login,
 				params,
 				{
@@ -273,8 +276,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				`Login request: ${JSON.stringify(loginRequest.statusText)}\n Returned Headers: \n${JSON.stringify(loginRequest.headers)}`,
 			)
 			return true
-		} catch (err: any) {
-			this.log('error', JSON.stringify(err))
+		} catch (err: unknown) {
+			this.handleError(err)
 			return false
 		}
 	}
@@ -282,10 +285,161 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	private async logout(): Promise<void> {
 		try {
 			this.closeWebSocketConnection()
-			await this.get(ApiCalls.logout, 2)
+			await this.httpsGet(ApiCalls.logout, 2)
 			await this.#jar.removeAllCookies()
-		} catch (err: any) {
+		} catch (err: unknown) {
 			this.log('warn', `Logout failed ${err}`)
+			this.handleError(err)
+		}
+	}
+
+	public handleError(err: unknown): void {
+		if (axios.isAxiosError(err)) {
+			this.#handleAxiosError(err)
+		} else if (err instanceof ZodError) {
+			this.#handleZodError(err)
+		} else {
+			this.#handleUnknownError(err)
+		}
+	}
+
+	#handleAxiosError(err: AxiosError): void {
+		this.debug(err)
+
+		if (err.response) {
+			// Server responded with error status (4xx, 5xx)
+			this.#handleHttpError(err)
+		} else if (err.request) {
+			// Request sent but no response received (network/timeout issues)
+			this.#handleNetworkError(err)
+		} else {
+			// Error during request setup
+			this.#statusManager.updateStatus(InstanceStatus.UnknownError)
+			this.log('error', `Request setup error: ${err.message}`)
+		}
+	}
+
+	#handleHttpError(err: AxiosError): void {
+		const status = err.response?.status
+
+		// Set status based on HTTP response code
+		if (status && status >= 500) {
+			this.#statusManager.updateStatus(InstanceStatus.UnknownError)
+			this.log('error', `Server error ${status}: ${err.message}`)
+		} else if (status === 401 || status === 403) {
+			this.#statusManager.updateStatus(InstanceStatus.AuthenticationFailure)
+			this.log('error', `Authentication error ${status}: Check credentials`)
+		} else if (status === 404) {
+			this.#statusManager.updateStatus(InstanceStatus.UnknownWarning)
+			this.log('error', `Not found ${status}: Endpoint may have changed`)
+		} else if (status === 429) {
+			this.#statusManager.updateStatus(InstanceStatus.UnknownWarning)
+			this.log('error', `Rate limited ${status}: Too many requests`)
+		} else {
+			this.#statusManager.updateStatus(InstanceStatus.UnknownWarning)
+			this.log('error', `HTTP ${status}: ${err.message}`)
+		}
+
+		// Log response data if useful
+		if (err.response?.data && typeof err.response.data === 'string') {
+			this.log('error', `Response: ${err.response.data}`)
+		}
+	}
+
+	#handleNetworkError(err: AxiosError): void {
+		const code = err.code
+
+		switch (code) {
+			case 'ECONNREFUSED':
+				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
+				this.log('error', 'Connection refused: Device may be offline or unreachable')
+				break
+
+			case 'ETIMEDOUT':
+			case 'ECONNABORTED':
+				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
+				this.log('error', `Request timed out: Device not responding (${code})`)
+				break
+
+			case 'ENOTFOUND':
+			case 'EAI_AGAIN':
+				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
+				this.log('error', `DNS resolution failed: Cannot find device hostname (${code})`)
+				break
+
+			case 'ENETUNREACH':
+			case 'EHOSTUNREACH':
+				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
+				this.log('error', `Network unreachable: Check network connectivity (${code})`)
+				break
+
+			case 'ECONNRESET':
+				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
+				this.log('error', 'Connection reset: Device closed connection unexpectedly')
+				break
+
+			case 'EPIPE':
+				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
+				this.log('error', 'Broken pipe: Connection lost during transmission')
+				break
+
+			case 'ECANCELED':
+				// Request was cancelled (e.g., by AbortController)
+				this.log('warn', 'Request cancelled')
+				// Don't change status for cancellations
+				break
+
+			case 'ERR_NETWORK':
+				// Generic network error (often seen in browsers)
+				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
+				this.log('error', 'Network error: Check device connection')
+				break
+
+			case 'ERR_BAD_REQUEST':
+				// Request was malformed
+				this.#statusManager.updateStatus(InstanceStatus.UnknownError)
+				this.log('error', `Bad request: ${err.message}`)
+				break
+
+			case 'ERR_BAD_RESPONSE':
+				// Response was malformed
+				this.#statusManager.updateStatus(InstanceStatus.UnknownWarning)
+				this.log('error', `Invalid response from device: ${err.message}`)
+				break
+
+			default:
+				// Unknown network error
+				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
+				this.log('error', `Network error${code ? ` (${code})` : ''}: ${err.message}`)
+				break
+		}
+
+		// Additional context
+		if (err.config?.url) {
+			this.log('debug', `Failed URL: ${err.config.url}`)
+		}
+	}
+
+	#handleZodError(err: ZodError): void {
+		this.debug(err)
+
+		// Format Zod errors more readably
+		const formattedErrors = err.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('\n  ')
+
+		this.log('warn', `Invalid data returned:\n  ${formattedErrors}`)
+	}
+
+	#handleUnknownError(err: unknown): void {
+		this.#statusManager.updateStatus(InstanceStatus.UnknownError)
+
+		// Safely stringify unknown errors
+		const errorMessage = err instanceof Error ? err.message : String(err)
+
+		this.log('error', `Unknown error: ${errorMessage}`)
+
+		// Log stack trace if available
+		if (err instanceof Error && err.stack) {
+			this.debug(err.stack)
 		}
 	}
 

@@ -71,7 +71,7 @@ export const Routes = z.union([AuxRouteRecord, OutputRouteRecord])
 
 export type Routes = z.infer<typeof Routes>
 
-export const AvRoutingMatrixV2 = z.object({
+export const AvMatrixRoutingV2 = z.object({
 	Config: Config,
 	Routes: Routes,
 	IsAutomaticRoutingEnabled: IsAutomaticRoutingEnabled,
@@ -80,4 +80,4 @@ export const AvRoutingMatrixV2 = z.object({
 	Version: Version,
 })
 
-export type AvRoutingMatrixV2 = z.infer<typeof AvRoutingMatrixV2>
+export type AvMatrixRoutingV2 = z.infer<typeof AvMatrixRoutingV2>
