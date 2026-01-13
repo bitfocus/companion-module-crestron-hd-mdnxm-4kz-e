@@ -8,7 +8,9 @@ import { StatusManager } from './status.js'
 import { ApiCalls, type ApiCallValues, wsApiGetCalls } from './api.js'
 import type { MsgData } from './types.js'
 import { Crestron_HDMDNXM_4KZ } from './device.js'
+import type { FeedbackSubscriptions } from './types.js'
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import { throttle } from 'es-toolkit'
 import { WebSocket } from 'ws'
 import { CookieJar } from 'tough-cookie'
 import { wrapper } from 'axios-cookiejar-support'
@@ -30,6 +32,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	#controller = new AbortController()
 	#statusManager = new StatusManager(this, { status: InstanceStatus.Connecting, message: 'Initialising' }, 2000)
 	#CREST_XSRF_TOKEN: string = ''
+	#feedbackIdsToCheck: Set<string> = new Set<string>()
+	public feedbackSubscriptions: FeedbackSubscriptions = Crestron_HDMDNXM_4KZ.feedbackSubscriptionTracker()
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -166,8 +170,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				`Message from websocket:\n${typeof event.data == 'object' ? JSON.stringify(event.data) : event.data.toString()}`,
 			)
 			try {
-				this.crestronDevice.partialUpdateDeviceFromWebSocketMessage(event)
-				this.checkFeedbacks()
+				const keys = this.crestronDevice.partialUpdateDeviceFromWebSocketMessage(event)
+				keys.forEach((key) => {
+					const feedbackIds = this.feedbackSubscriptions[key]
+					if (feedbackIds) {
+						feedbackIds.forEach((id) => this.#feedbackIdsToCheck.add(id))
+					}
+				})
+				this.throttledCheckFeedbacksById()
 			} catch (err) {
 				this.handleError(err)
 			}
@@ -237,10 +247,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
 					this.#socket.send(data, (err) => {
 						if (err) {
-							this.log(
-								'warn',
-								`WebSocket failed to send ${data} with error ${typeof err == 'object' ? JSON.stringify(err) : err}`,
-							)
+							this.log('warn', `WebSocket failed to send ${data} with error ${err.message}`)
 							this.handleError(err)
 						} else {
 							this.debug(`Sent WebSocket Message: ${data}`)
@@ -450,6 +457,16 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.debug(err.stack)
 		}
 	}
+
+	throttledCheckFeedbacksById = throttle(
+		() => {
+			if (this.#feedbackIdsToCheck.size === 0) return
+			this.checkFeedbacksById(...Array.from(this.#feedbackIdsToCheck))
+			this.#feedbackIdsToCheck.clear()
+		},
+		50,
+		{ edges: ['trailing'], signal: this.#controller.signal },
+	)
 
 	// Return config fields for web config
 	getConfigFields(): SomeCompanionConfigField[] {

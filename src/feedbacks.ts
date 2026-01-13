@@ -1,5 +1,23 @@
-import { combineRgb } from '@companion-module/base'
+import { combineRgb, CompanionFeedbackContext, CompanionFeedbackInfo } from '@companion-module/base'
 import type { ModuleInstance } from './main.js'
+import { InnerDevice } from './schemas/Device.js'
+import * as Options from './options.js'
+
+export const feedbackSubscribe =
+	(instance: ModuleInstance, types: Array<keyof InnerDevice>) =>
+	(feedback: CompanionFeedbackInfo, _context: CompanionFeedbackContext): void => {
+		types.forEach((type) => {
+			instance.feedbackSubscriptions[type].add(feedback.id)
+		})
+	}
+
+export const feedbackUnsubscribe =
+	(instance: ModuleInstance, types: Array<keyof InnerDevice>) =>
+	(feedback: CompanionFeedbackInfo, _context: CompanionFeedbackContext): void => {
+		types.forEach((type) => {
+			instance.feedbackSubscriptions[type].delete(feedback.id)
+		})
+	}
 
 export function UpdateFeedbacks(self: ModuleInstance): void {
 	self.setFeedbackDefinitions({
@@ -8,13 +26,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			description: `Get the video source routed to a destination`,
 			type: 'value',
 			options: [
-				{
-					id: 'destination',
-					type: 'dropdown',
-					label: 'Destination',
-					choices: self.crestronDevice.outputChoicesSupportingVideoRouting,
-					default: self.crestronDevice.outputChoicesSupportingVideoRouting[0].id,
-				},
+				Options.destinationOption(self.crestronDevice.outputChoicesSupportingVideoRouting),
 				{
 					id: 'name',
 					type: 'checkbox',
@@ -39,20 +51,14 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				}
 				return source
 			},
+			subscribe: feedbackSubscribe(self, ['AvMatrixRoutingV2', 'AvioV2']),
+			unsubscribe: feedbackUnsubscribe(self, ['AvMatrixRoutingV2', 'AvioV2']),
 		},
 		videoDestinationName: {
 			name: 'Destination - Name',
 			description: `Get a destination's user specified name`,
 			type: 'value',
-			options: [
-				{
-					id: 'destination',
-					type: 'dropdown',
-					label: 'Destination',
-					choices: self.crestronDevice.outputChoices,
-					default: self.crestronDevice.outputChoices[0].id,
-				},
-			],
+			options: [Options.destinationOption(self.crestronDevice.outputChoices)],
 			callback: (feedback) => {
 				const dest = feedback.options.destination?.toString() ?? ''
 				let destName: string = ''
@@ -62,6 +68,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				}
 				return destName
 			},
+			subscribe: feedbackSubscribe(self, ['AvioV2']),
+			unsubscribe: feedbackUnsubscribe(self, ['AvioV2']),
 		},
 		videoSourceTally: {
 			name: 'Destination - Video Tally Source',
@@ -72,20 +80,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				color: combineRgb(0, 0, 0),
 			},
 			options: [
-				{
-					id: 'source',
-					type: 'dropdown',
-					label: 'Source',
-					choices: self.crestronDevice.inputChoicesSupportingVideoRouting,
-					default: self.crestronDevice.inputChoicesSupportingVideoRouting[0].id,
-				},
-				{
-					id: 'destination',
-					type: 'dropdown',
-					label: 'Destination',
-					choices: self.crestronDevice.outputChoicesSupportingVideoRouting,
-					default: self.crestronDevice.outputChoicesSupportingVideoRouting[0].id,
-				},
+				Options.sourceOption(self.crestronDevice.inputChoicesSupportingVideoRouting),
+				Options.destinationOption(self.crestronDevice.outputChoicesSupportingVideoRouting),
 			],
 			callback: (feedback) => {
 				const dest = feedback.options.destination?.toString() ?? ''
@@ -114,20 +110,14 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				}
 				return undefined
 			},
+			subscribe: feedbackSubscribe(self, ['AvMatrixRoutingV2']),
+			unsubscribe: feedbackUnsubscribe(self, ['AvMatrixRoutingV2']),
 		},
 		videoSourceName: {
 			name: 'Source - Name',
 			description: `Get a source's user specified name`,
 			type: 'value',
-			options: [
-				{
-					id: 'source',
-					type: 'dropdown',
-					label: 'Source',
-					choices: self.crestronDevice.inputChoices,
-					default: self.crestronDevice.inputChoices[0].id,
-				},
-			],
+			options: [Options.sourceOption(self.crestronDevice.inputChoices)],
 			callback: (feedback) => {
 				const source = feedback.options.source?.toString() ?? ''
 				let sourceName: string = ''
@@ -135,6 +125,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				if (source in AvioInputs) sourceName = AvioInputs[source].UserSpecifiedName
 				return sourceName
 			},
+			subscribe: feedbackSubscribe(self, ['AvioV2']),
+			unsubscribe: feedbackUnsubscribe(self, ['AvioV2']),
 		},
 	})
 }

@@ -1,4 +1,5 @@
 import type { ModuleInstance } from './main.js'
+import * as Options from './options.js'
 
 export function UpdateActions(self: ModuleInstance): void {
 	if (!self.crestronDevice) {
@@ -8,24 +9,12 @@ export function UpdateActions(self: ModuleInstance): void {
 		routeVideo: {
 			name: 'Route Video',
 			options: [
-				{
-					id: 'source',
-					type: 'dropdown',
-					label: 'Source',
-					choices: self.crestronDevice.inputChoicesSupportingVideoRouting,
-					default: self.crestronDevice.inputChoicesSupportingVideoRouting[0].id,
-				},
-				{
-					id: 'destination',
-					type: 'dropdown',
-					label: 'Destination',
-					choices: self.crestronDevice.outputChoicesSupportingVideoRouting,
-					default: self.crestronDevice.outputChoicesSupportingVideoRouting[0].id,
-				},
+				Options.sourceOption(self.crestronDevice.inputChoicesSupportingVideoRouting),
+				Options.destinationOption(self.crestronDevice.outputChoicesSupportingVideoRouting),
 				{
 					id: 'audio',
 					type: 'checkbox',
-					label: 'Also route audio',
+					label: 'Force route audio',
 					default: true,
 				},
 			],

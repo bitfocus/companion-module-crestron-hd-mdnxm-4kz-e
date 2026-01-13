@@ -1,7 +1,8 @@
 import { type DropdownChoice } from '@companion-module/base'
-import { Device, PartialDevice } from './schemas/Device.js'
+import { Device, type InnerDevice, PartialDevice } from './schemas/Device.js'
 import * as AvioV2 from './schemas/AvioV2.js'
 import * as AvMatrixRoutingV2 from './schemas/AvMatrixRoutingV2.js'
+import { FeedbackSubscriptions } from './types.js'
 import { type AxiosResponse } from 'axios'
 import { type WebSocket } from 'ws'
 import { merge } from 'es-toolkit/object'
@@ -17,10 +18,21 @@ export class Crestron_HDMDNXM_4KZ {
 		return new Crestron_HDMDNXM_4KZ(device)
 	}
 
-	public partialUpdateDeviceFromWebSocketMessage(partialDevice: WebSocket.MessageEvent): void {
+	static feedbackSubscriptionTracker(): FeedbackSubscriptions {
+		return {
+			AvioV2: new Set(),
+			AvMatrixRoutingV2: new Set(),
+		}
+	}
+
+	public partialUpdateDeviceFromWebSocketMessage(partialDevice: WebSocket.MessageEvent): Array<keyof InnerDevice> {
 		// eslint-disable-next-line @typescript-eslint/no-base-to-string
 		const parsedPartialDevice = PartialDevice.parse(JSON.parse(partialDevice.data.toString()))
 		merge(this.#HDMDNXM, parsedPartialDevice)
+		// Extract keys from the Device property if it exists
+		const keys = parsedPartialDevice.Device ? (Object.keys(parsedPartialDevice.Device) as Array<keyof InnerDevice>) : []
+
+		return keys
 	}
 
 	get AvioV2(): Readonly<AvioV2.AvioV2> {
