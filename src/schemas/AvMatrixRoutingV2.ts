@@ -71,13 +71,28 @@ export const Routes = z.union([AuxRouteRecord, OutputRouteRecord])
 
 export type Routes = z.infer<typeof Routes>
 
+export const PriorityList = z.record(z.string(), z.number())
+
+export type PriorityList = z.infer<typeof PriorityList>
+
+export const RoutePriorities = z.record(
+	Output,
+	z.object({
+		PrioirtyList: PriorityList, // Accept the typo from the data
+	}),
+)
+
+export type RoutePriorities = z.infer<typeof RoutePriorities>
+
 export const AvMatrixRoutingV2 = z.object({
-	Config: Config,
+	Config: Config.optional(), // Defined in the API doc but not present in return data
 	Routes: Routes,
+	RoutePriorities: RoutePriorities,
 	IsAutomaticRoutingEnabled: IsAutomaticRoutingEnabled,
-	IsFollowOutputEnabled: IsFollowOutputEnabled,
+	IsFollowOutputEnabled: IsFollowOutputEnabled.optional(), // Defined in the API doc but not present in return data
 	IsPriorityRoutingEnabled: IsPriorityRoutingEnabled,
 	Version: Version,
+	SyncDetectedOrder: z.string(),
 })
 
 export type AvMatrixRoutingV2 = z.infer<typeof AvMatrixRoutingV2>

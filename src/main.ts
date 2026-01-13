@@ -45,9 +45,6 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets): Promise<void> {
 		this.#config = config
 		this.#secrets = secrets
-		this.updateActions() // export actions
-		this.updateFeedbacks() // export feedbacks
-		this.updateVariableDefinitions() // export variable definitions
 
 		this.configUpdated(config, secrets).catch(() => {})
 	}
@@ -81,6 +78,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				const deviceQuery = await this.httpsGet(ApiCalls.Device)
 				this.crestronDevice = Crestron_HDMDNXM_4KZ.createNewDevice(deviceQuery)
 				this.createWebSocketConnection(config.host)
+				this.updateActions() // export actions
+				this.updateFeedbacks() // export feedbacks
+				this.updateVariableDefinitions() // export variable definitions
 			} else {
 				this.#statusManager.updateStatus(InstanceStatus.BadConfig, `Can't login`)
 			}
@@ -165,6 +165,12 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.debug(
 				`Message from websocket:\n${typeof event.data == 'object' ? JSON.stringify(event.data) : event.data.toString()}`,
 			)
+			try {
+				this.crestronDevice.partialUpdateDeviceFromWebSocketMessage(event)
+				this.checkFeedbacks()
+			} catch (err) {
+				this.handleError(err)
+			}
 		})
 		this.#socket.addEventListener('error', (error) => {
 			this.log('error', `Error from websocket: ${error.message}`)
@@ -433,7 +439,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		this.#statusManager.updateStatus(InstanceStatus.UnknownError)
 
 		// Safely stringify unknown errors
-		const errorMessage = err instanceof Error ? err.message : String(err)
+		const errorMessage =
+			// eslint-disable-next-line @typescript-eslint/no-base-to-string
+			err instanceof Error ? err.message : typeof err == 'object' ? JSON.stringify(err) : String(err)
 
 		this.log('error', `Unknown error: ${errorMessage}`)
 
