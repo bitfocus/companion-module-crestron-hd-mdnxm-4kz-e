@@ -5,7 +5,7 @@ import * as AvMatrixRoutingV2 from './schemas/AvMatrixRoutingV2.js'
 import { FeedbackSubscriptions } from './types.js'
 import { type AxiosResponse } from 'axios'
 import { type WebSocket } from 'ws'
-import { merge } from 'es-toolkit/object'
+import { merge, isEqual } from 'es-toolkit'
 export class Crestron_HDMDNXM_4KZ {
 	#HDMDNXM!: Device
 
@@ -28,11 +28,47 @@ export class Crestron_HDMDNXM_4KZ {
 	public partialUpdateDeviceFromWebSocketMessage(partialDevice: WebSocket.MessageEvent): Array<keyof InnerDevice> {
 		// eslint-disable-next-line @typescript-eslint/no-base-to-string
 		const parsedPartialDevice = PartialDevice.parse(JSON.parse(partialDevice.data.toString()))
-		merge(this.#HDMDNXM, parsedPartialDevice)
-		// Extract keys from the Device property if it exists
-		const keys = parsedPartialDevice.Device ? (Object.keys(parsedPartialDevice.Device) as Array<keyof InnerDevice>) : []
 
-		return keys
+		// Collect top-level keys that have changes somewhere in their nested structure
+		const changedKeys = new Set<keyof InnerDevice>()
+
+		if (parsedPartialDevice.Device) {
+			this.findChangedPaths(parsedPartialDevice.Device, this.#HDMDNXM.Device || {}, (topLevelKey) =>
+				changedKeys.add(topLevelKey),
+			)
+		}
+
+		// Only merge if there are changes
+		if (changedKeys.size > 0) {
+			merge(this.#HDMDNXM, parsedPartialDevice)
+		}
+
+		return Array.from(changedKeys)
+	}
+
+	private findChangedPaths(
+		partialData: any,
+		existingData: any,
+		onTopLevelChange: (key: keyof InnerDevice) => void,
+		currentTopLevelKey?: keyof InnerDevice,
+	): void {
+		for (const key of Object.keys(partialData)) {
+			const topKey = currentTopLevelKey ?? (key as keyof InnerDevice)
+			const newValue = partialData[key]
+			const oldValue = existingData?.[key]
+
+			// Check if this specific value differs
+			if (!isEqual(oldValue, newValue)) {
+				onTopLevelChange(topKey)
+				// No need to recurse further once we know this top-level key changed
+				continue
+			}
+
+			// If values are equal but both are objects, recurse to check nested properties
+			if (newValue && typeof newValue === 'object' && !Array.isArray(newValue)) {
+				this.findChangedPaths(newValue, oldValue || {}, onTopLevelChange, topKey)
+			}
+		}
 	}
 
 	get AvioV2(): Readonly<AvioV2.AvioV2> {
@@ -46,7 +82,7 @@ export class Crestron_HDMDNXM_4KZ {
 	get inputChoices(): DropdownChoice[] {
 		const choices: DropdownChoice[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Inputs)) {
-			choices.push({ id: key, label: value.UserSpecifiedName })
+			choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
 		}
 		return choices
 	}
@@ -54,7 +90,8 @@ export class Crestron_HDMDNXM_4KZ {
 	get inputChoicesSupportingVideoRouting(): DropdownChoice[] {
 		const choices: DropdownChoice[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Inputs)) {
-			if (value.Capabilities.IsVideoRoutingSupported) choices.push({ id: key, label: value.UserSpecifiedName })
+			if (value.Capabilities.IsVideoRoutingSupported)
+				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
 		}
 		return choices
 	}
@@ -66,7 +103,7 @@ export class Crestron_HDMDNXM_4KZ {
 	get outputChoices(): DropdownChoice[] {
 		const choices: DropdownChoice[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Outputs)) {
-			choices.push({ id: key, label: value.UserSpecifiedName })
+			choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
 		}
 		return choices
 	}
@@ -74,7 +111,8 @@ export class Crestron_HDMDNXM_4KZ {
 	get outputChoicesSupportingVideoRouting(): DropdownChoice[] {
 		const choices: DropdownChoice[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Outputs)) {
-			if (value.Capabilities.IsVideoRoutingSupported) choices.push({ id: key, label: value.UserSpecifiedName })
+			if (value.Capabilities.IsVideoRoutingSupported)
+				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
 		}
 		return choices
 	}

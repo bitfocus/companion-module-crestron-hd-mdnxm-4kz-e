@@ -1,5 +1,6 @@
 import type { ModuleInstance } from './main.js'
 import * as Options from './options.js'
+import { wsApiPostCalls } from './api.js'
 
 export function UpdateActions(self: ModuleInstance): void {
 	if (!self.crestronDevice) {
@@ -25,21 +26,10 @@ export function UpdateActions(self: ModuleInstance): void {
 					self.log('warn', `Action: ${event.actionId}:${event.id} - Source or Destination not set for routing action`)
 					return
 				}
-				const command = event.options.audio ? { VideoSource: source, AudioSource: source } : { VideoSource: source }
-				const msg = JSON.stringify({
-					Device: {
-						AvMatrixRoutingV2: {
-							Routes: {
-								[dest]: command,
-							},
-						},
-					},
-				})
-				try {
-					await self.wsSend(msg)
-				} catch (err) {
-					self.handleError(err)
-				}
+				const msg = event.options.audio
+					? wsApiPostCalls.routeAudioVideo(dest, source)
+					: wsApiPostCalls.routeVideo(dest, source)
+				await self.wsSend(msg)
 			},
 			learn: (event) => {
 				const routes = self.crestronDevice.routes

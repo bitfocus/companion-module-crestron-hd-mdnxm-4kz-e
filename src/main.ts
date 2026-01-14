@@ -131,7 +131,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	private sendWsPing(): void {
 		if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
 			this.debug('Sending WebSocket Ping')
-			this.wsSend(wsApiGetCalls.avioV2, 0).catch(() => {})
+			this.wsSend(wsApiGetCalls.routingMatrixRoutes, 0).catch(() => {})
 		}
 		this.startWsPing()
 	}
@@ -181,6 +181,11 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 						feedbackIds.forEach((id) => this.#feedbackIdsToCheck.add(id))
 					}
 				})
+				if (keys.includes('AvioV2')) {
+					// Update action and feedback defs if AvioV2 changed
+					this.updateActions()
+					this.updateVariableDefinitions()
+				}
 				this.throttledCheckFeedbacksById()
 			} catch (err) {
 				this.handleError(err)
@@ -249,17 +254,22 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		return this.#queue.add(
 			async () => {
 				if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
-					this.#socket.send(data, (err) => {
-						if (err) {
-							this.log('warn', `WebSocket failed to send ${data} with error ${err.message}`)
-							this.handleError(err)
-						} else {
-							this.debug(`Sent WebSocket Message: ${data}`)
-							this.startWsPing()
-						}
+					return new Promise<void>((resolve) => {
+						this.#socket.send(data, (err) => {
+							if (err) {
+								this.log('warn', `WebSocket failed to send ${data} with error ${err.message}`)
+								this.handleError(err)
+								throw err
+							} else {
+								this.debug(`Sent WebSocket Message: ${data}`)
+								this.startWsPing()
+								resolve()
+							}
+						})
 					})
 				} else {
 					this.log('warn', `WebSocket not open. Could not send ${data}`)
+					return
 				}
 			},
 			{ priority: priority, signal: this.#controller.signal },

@@ -22,4 +22,9 @@ export const wsApiPostCalls = {
 	routeVideo: (output: string, source: string): string => {
 		return JSON.stringify({ Device: { AvMatrixRouting: { Routes: { [output]: { VideoSource: source } } } } })
 	},
+	routeAudioVideo: (output: string, source: string): string => {
+		return JSON.stringify({
+			Device: { AvMatrixRouting: { Routes: { [output]: { AudioSource: source, VideoSource: source } } } },
+		})
+	},
 } satisfies Record<string, (output: string, source: string) => string>
