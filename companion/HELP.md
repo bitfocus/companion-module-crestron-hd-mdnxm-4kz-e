@@ -4,4 +4,24 @@
 
 This module uses HTTPS & Websocket protocols
 
-The unit will lock out a user account after a number of failed login attempts, and lock out an IP after several more. For this reason do not use the sole admin account for Companion control, rather set up a dedicated user account.
+The unit will lock out a user account after a number of failed login attempts, and lock out an IP after several more. For this reason do not use the sole admin account for Companion control - set up a dedicated companion user account.
+
+### Actions
+
+-**Route Video**
+
+### Feedbacks - Boolean
+
+-**Destination - Sink Connected**
+
+-**Destination - Video Tally Source**
+
+-**Source - Sync Detected**
+
+### Feedbacks - Value
+
+-**Destination - Name**
+
+-**Destination - Video Source**
+
+-**Source - Name**
