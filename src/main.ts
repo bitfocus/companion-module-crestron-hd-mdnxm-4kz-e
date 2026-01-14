@@ -21,17 +21,21 @@ import url from 'node:url'
 const PING_INTERVAL = 30000 // milliseconds
 
 export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
-	crestronDevice!: Crestron_HDMDNXM_4KZ
+	public crestronDevice!: Crestron_HDMDNXM_4KZ
 	#config!: ModuleConfig // Setup in init()
 	#secrets!: ModuleSecrets
+	#CREST_XSRF_TOKEN: string = ''
+
 	#axiosClient!: AxiosInstance
+	#jar = new CookieJar()
 	#socket!: WebSocket
 	#pingTimer: NodeJS.Timeout | undefined
-	#jar = new CookieJar()
+
 	#queue = new PQueue({ concurrency: 1, interval: 50, intervalCap: 1 })
 	#controller = new AbortController()
+
 	#statusManager = new StatusManager(this, { status: InstanceStatus.Connecting, message: 'Initialising' }, 2000)
-	#CREST_XSRF_TOKEN: string = ''
+
 	#feedbackIdsToCheck: Set<string> = new Set<string>()
 	public feedbackSubscriptions: FeedbackSubscriptions = Crestron_HDMDNXM_4KZ.feedbackSubscriptionTracker()
 
@@ -127,7 +131,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	private sendWsPing(): void {
 		if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
 			this.debug('Sending WebSocket Ping')
-			this.wsSend(wsApiGetCalls.routingMatrixRoutes, 0).catch(() => {})
+			this.wsSend(wsApiGetCalls.avioV2, 0).catch(() => {})
 		}
 		this.startWsPing()
 	}
@@ -284,7 +288,6 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				},
 				3,
 			)
-			if (loginRequest instanceof AxiosError) throw loginRequest
 			this.debug(
 				`Login request: ${JSON.stringify(loginRequest.statusText)}\n Returned Headers: \n${JSON.stringify(loginRequest.headers)}`,
 			)
@@ -301,7 +304,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			await this.httpsGet(ApiCalls.logout, 2)
 			await this.#jar.removeAllCookies()
 		} catch (err: unknown) {
-			this.log('warn', `Logout failed ${err}`)
+			this.log('warn', `Logout failed`)
 			this.handleError(err)
 		}
 	}

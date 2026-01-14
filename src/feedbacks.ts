@@ -3,7 +3,7 @@ import type { ModuleInstance } from './main.js'
 import { InnerDevice } from './schemas/Device.js'
 import * as Options from './options.js'
 
-export const feedbackSubscribe =
+const feedbackSubscribe =
 	(instance: ModuleInstance, types: Array<keyof InnerDevice>) =>
 	(feedback: CompanionFeedbackInfo, _context: CompanionFeedbackContext): void => {
 		types.forEach((type) => {
@@ -11,13 +11,24 @@ export const feedbackSubscribe =
 		})
 	}
 
-export const feedbackUnsubscribe =
+const feedbackUnsubscribe =
 	(instance: ModuleInstance, types: Array<keyof InnerDevice>) =>
 	(feedback: CompanionFeedbackInfo, _context: CompanionFeedbackContext): void => {
 		types.forEach((type) => {
 			instance.feedbackSubscriptions[type].delete(feedback.id)
 		})
 	}
+
+const styles = {
+	blackOnGreen: {
+		bgcolor: combineRgb(0, 204, 0),
+		color: combineRgb(0, 0, 0),
+	},
+	blackOnRed: {
+		bgcolor: combineRgb(255, 0, 0),
+		color: combineRgb(0, 0, 0),
+	},
+}
 
 export function UpdateFeedbacks(self: ModuleInstance): void {
 	self.setFeedbackDefinitions({
@@ -61,24 +72,43 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			options: [Options.destinationOption(self.crestronDevice.outputChoices)],
 			callback: (feedback) => {
 				const dest = feedback.options.destination?.toString() ?? ''
-				let destName: string = ''
-				if (feedback.options.name) {
-					const AvioOutputs = self.crestronDevice.AvioV2.Outputs
-					if (dest in AvioOutputs) destName = AvioOutputs[dest].UserSpecifiedName
-				}
-				return destName
+				const AvioOutputs = self.crestronDevice.AvioV2.Outputs
+				if (dest in AvioOutputs) return AvioOutputs[dest].UserSpecifiedName
+				return 'name not found'
 			},
 			subscribe: feedbackSubscribe(self, ['AvioV2']),
 			unsubscribe: feedbackUnsubscribe(self, ['AvioV2']),
 		},
+		videoDestinationSinkConnected: {
+			name: 'Destination - Sink Connected',
+			description: `Get a destination's sink connected status`,
+			type: 'boolean',
+			defaultStyle: styles.blackOnGreen,
+			options: [Options.destinationOption(self.crestronDevice.outputChoices)],
+			callback: (feedback) => {
+				const dest = feedback.options.destination?.toString() ?? ''
+
+				const AvioOutputs = self.crestronDevice.AvioV2.Outputs
+				if (dest in AvioOutputs) {
+					const OutputPorts = AvioOutputs[dest].OutputInfo.Ports
+					for (const [_portName, portInfo] of Object.entries(OutputPorts)) {
+						if ('IsSinkConnected' in portInfo && portInfo.IsSinkConnected) {
+							return portInfo.IsSinkConnected
+							break
+						}
+					}
+				}
+				return false
+			},
+			subscribe: feedbackSubscribe(self, ['AvioV2']),
+			unsubscribe: feedbackUnsubscribe(self, ['AvioV2']),
+		},
+
 		videoSourceTally: {
 			name: 'Destination - Video Tally Source',
 			description: `Tally a video crosspoint`,
 			type: 'boolean',
-			defaultStyle: {
-				bgcolor: combineRgb(255, 0, 0),
-				color: combineRgb(0, 0, 0),
-			},
+			defaultStyle: styles.blackOnRed,
 			options: [
 				Options.sourceOption(self.crestronDevice.inputChoicesSupportingVideoRouting),
 				Options.destinationOption(self.crestronDevice.outputChoicesSupportingVideoRouting),
@@ -120,10 +150,31 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			options: [Options.sourceOption(self.crestronDevice.inputChoices)],
 			callback: (feedback) => {
 				const source = feedback.options.source?.toString() ?? ''
-				let sourceName: string = ''
 				const AvioInputs = self.crestronDevice.AvioV2.Inputs
-				if (source in AvioInputs) sourceName = AvioInputs[source].UserSpecifiedName
-				return sourceName
+				if (source in AvioInputs) return AvioInputs[source].UserSpecifiedName
+				return ''
+			},
+			subscribe: feedbackSubscribe(self, ['AvioV2']),
+			unsubscribe: feedbackUnsubscribe(self, ['AvioV2']),
+		},
+		videoSourceSinkConnected: {
+			name: 'Source - Sync Detected',
+			description: `Get a source's sync detected status`,
+			type: 'boolean',
+			defaultStyle: styles.blackOnGreen,
+			options: [Options.sourceOption(self.crestronDevice.inputChoices)],
+			callback: (feedback) => {
+				const source = feedback.options.source?.toString() ?? ''
+				const AvioInputs = self.crestronDevice.AvioV2.Inputs
+				if (source in AvioInputs) {
+					const InputPorts = AvioInputs[source].InputInfo.Ports
+					for (const [_portName, portInfo] of Object.entries(InputPorts)) {
+						if ('IsSyncDetected' in portInfo && portInfo.IsSyncDetected) {
+							return portInfo.IsSyncDetected
+						}
+					}
+				}
+				return false
 			},
 			subscribe: feedbackSubscribe(self, ['AvioV2']),
 			unsubscribe: feedbackUnsubscribe(self, ['AvioV2']),
