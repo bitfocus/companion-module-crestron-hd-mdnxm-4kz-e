@@ -130,8 +130,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	private sendWsPing(): void {
 		if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
-			this.debug('Sending WebSocket Ping')
-			this.wsSend(wsApiGetCalls.routingMatrixRoutes, 0).catch(() => {})
+			// Keep a minimum of traffic on the socket so it doesnt go stale
+			this.wsSend(wsApiGetCalls.routingMatrixRoutes, 0).catch((err: unknown) => {
+				this.handleError(err)
+			})
 		}
 		this.startWsPing()
 	}
@@ -183,8 +185,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				})
 				if (keys.includes('AvioV2')) {
 					// Update action and feedback defs if AvioV2 changed
-					this.updateActions()
-					this.updateVariableDefinitions()
+					this.throttledUpdateActionFeedbackDefs()
 				}
 				this.throttledCheckFeedbacksById()
 			} catch (err) {
@@ -268,8 +269,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 						})
 					})
 				} else {
-					this.log('warn', `WebSocket not open. Could not send ${data}`)
-					return
+					throw new Error(`WebSocket not open. Could not send ${data}`)
 				}
 			},
 			{ priority: priority, signal: this.#controller.signal },
@@ -478,6 +478,15 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.#feedbackIdsToCheck.clear()
 		},
 		50,
+		{ edges: ['trailing'], signal: this.#controller.signal },
+	)
+
+	throttledUpdateActionFeedbackDefs = throttle(
+		() => {
+			this.updateActions()
+			this.updateFeedbacks()
+		},
+		5000,
 		{ edges: ['trailing'], signal: this.#controller.signal },
 	)
 
