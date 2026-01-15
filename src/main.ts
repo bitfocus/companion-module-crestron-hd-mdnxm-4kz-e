@@ -131,9 +131,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	private sendWsPing(): void {
 		if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
 			// Keep a minimum of traffic on the socket so it doesnt go stale
-			this.wsSend(wsApiGetCalls.routingMatrixRoutes, 0).catch((err: unknown) => {
-				this.handleError(err)
-			})
+			this.wsSend(wsApiGetCalls.routingMatrixRoutes, 0).catch(() => {})
 		}
 		this.startWsPing()
 	}
@@ -255,12 +253,12 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		return this.#queue.add(
 			async () => {
 				if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
-					return new Promise<void>((resolve) => {
+					return new Promise<void>((resolve, reject) => {
 						this.#socket.send(data, (err) => {
 							if (err) {
 								this.log('warn', `WebSocket failed to send ${data} with error ${err.message}`)
 								this.handleError(err)
-								throw err
+								reject(err)
 							} else {
 								this.debug(`Sent WebSocket Message: ${data}`)
 								this.startWsPing()
