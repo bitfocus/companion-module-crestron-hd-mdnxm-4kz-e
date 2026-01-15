@@ -97,6 +97,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		}
 	}
 
+	throttledReconnect = throttle(
+		() => {
+			this.configUpdated(this.#config, this.#secrets).catch(() => {})
+		},
+		10000,
+		{ edges: ['trailing'], signal: this.#controller.signal },
+	)
+
 	private async createClient(host = this.#config.host): Promise<void> {
 		if (!host) {
 			this.#statusManager.updateStatus(InstanceStatus.BadConfig, 'No host')
@@ -198,6 +206,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.log('warn', `Socket Closed. Code ${event.code}: ${event.reason}`)
 			this.#statusManager.updateStatus(InstanceStatus.Disconnected, `WebSocket disconnected`)
 			this.#queue.clear()
+			// Try and reinitalise connection in 10 seconds
+			// Calls configUpdated, to redo the full auth and connection process
+			this.throttledReconnect()
 		})
 	}
 
