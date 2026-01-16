@@ -81,19 +81,18 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = config.selfSigned ? '0' : '1'
 		try {
 			await this.createClient(config.host)
-			if (await this.login()) {
-				this.log('info', `Logged in to ${this.#config.host}`)
-				const deviceQuery = await this.httpsGet(ApiCalls.Device)
-				this.crestronDevice = Crestron_HDMDNXM_4KZ.createNewDevice(deviceQuery)
-				this.createWebSocketConnection(config.host)
-				this.updateActions() // export actions
-				this.updateFeedbacks() // export feedbacks
-				this.updateVariableDefinitions() // export variable definitions
-			} else {
-				this.#statusManager.updateStatus(InstanceStatus.BadConfig, `Can't login`)
-			}
+			await this.login()
+			this.log('info', `Logged in to ${this.#config.host}`)
+			const deviceQuery = await this.httpsGet(ApiCalls.Device)
+			this.crestronDevice = Crestron_HDMDNXM_4KZ.createNewDevice(deviceQuery)
+			this.createWebSocketConnection(config.host)
+			this.throttledUpdateActionFeedbackDefs()
 		} catch (err) {
 			this.handleError(err)
+			if (axios.isAxiosError(err)) {
+				// Only attempt a reconnect if could not reach unit
+				if (err.response === undefined) this.throttledReconnect()
+			}
 		}
 	}
 
@@ -146,10 +145,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	private createWebSocketConnection(host = this.#config.host): void {
 		this.closeWebSocketConnection()
-		if (!host) {
-			this.#statusManager.updateStatus(InstanceStatus.BadConfig, 'No host')
-			return
-		}
+		if (!host) throw new Error('No host')
 		const wsUrl = `wss://${this.#config.host}${ApiCalls.WsUpgrade}`
 		this.debug(`Connecting to WebSocket at ${wsUrl}`)
 		this.#socket = new WebSocket(wsUrl, {
@@ -286,35 +282,29 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	}
 
 	private async login(): Promise<boolean> {
-		try {
-			this.#CREST_XSRF_TOKEN = ''
-			const trackIdRequest = await this.httpsGet(ApiCalls.login, 3)
-			if (trackIdRequest instanceof AxiosError) throw trackIdRequest
-			this.debug(`Returned Headers: \n${JSON.stringify(trackIdRequest.headers)}`)
-			this.debug(`Cookies: ${JSON.stringify(this.#jar.getCookiesSync(`https://${this.#config.host}`))}`)
+		this.#CREST_XSRF_TOKEN = ''
+		const trackIdRequest = await this.httpsGet(ApiCalls.login, 3)
+		this.debug(`Returned Headers: \n${JSON.stringify(trackIdRequest.headers)}`)
+		this.debug(`Cookies: ${JSON.stringify(this.#jar.getCookiesSync(`https://${this.#config.host}`))}`)
 
-			const params = new url.URLSearchParams()
-			params.append('login', this.#config.user)
-			params.append('passwd', this.#secrets.passwd)
+		const params = new url.URLSearchParams()
+		params.append('login', this.#config.user)
+		params.append('passwd', this.#secrets.passwd)
 
-			const loginRequest = await this.httpsPost(
-				ApiCalls.login,
-				params,
-				{
-					Origin: `https://${this.#config.host}`,
-					Referer: `https://${this.#config.host}${ApiCalls.login}`,
-					'Content-Type': `application/x-www-form-urlencoded`,
-				},
-				3,
-			)
-			this.debug(
-				`Login request: ${JSON.stringify(loginRequest.statusText)}\n Returned Headers: \n${JSON.stringify(loginRequest.headers)}`,
-			)
-			return true
-		} catch (err: unknown) {
-			this.handleError(err)
-			return false
-		}
+		const loginRequest = await this.httpsPost(
+			ApiCalls.login,
+			params,
+			{
+				Origin: `https://${this.#config.host}`,
+				Referer: `https://${this.#config.host}${ApiCalls.login}`,
+				'Content-Type': `application/x-www-form-urlencoded`,
+			},
+			3,
+		)
+		this.debug(
+			`Login request: ${JSON.stringify(loginRequest.statusText)}\n Returned Headers: \n${JSON.stringify(loginRequest.headers)}`,
+		)
+		return true
 	}
 
 	private async logout(): Promise<void> {
@@ -492,8 +482,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	throttledUpdateActionFeedbackDefs = throttle(
 		() => {
-			this.updateActions()
-			this.updateFeedbacks()
+			this.updateActions() // export actions
+			this.updateFeedbacks() // export feedbacks
+			this.updateVariableDefinitions() // export variable definitions
 		},
 		5000,
 		{ edges: ['trailing'], signal: this.#controller.signal },
