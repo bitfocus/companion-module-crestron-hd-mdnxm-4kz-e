@@ -96,6 +96,15 @@ export class Crestron_HDMDNXM_4KZ {
 		return choices
 	}
 
+	get inputChoicesSupportingAudioRouting(): DropdownChoice[] {
+		const choices: DropdownChoice[] = []
+		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Inputs)) {
+			if (value.Capabilities.IsAudioRoutingSupported)
+				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
+		}
+		return choices
+	}
+
 	get outputs(): Readonly<AvioV2.Outputs> {
 		return this.#HDMDNXM.Device.AvioV2.Outputs
 	}
@@ -112,6 +121,15 @@ export class Crestron_HDMDNXM_4KZ {
 		const choices: DropdownChoice[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Outputs)) {
 			if (value.Capabilities.IsVideoRoutingSupported)
+				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
+		}
+		return choices
+	}
+
+	get outputChoicesSupportingAudioRouting(): DropdownChoice[] {
+		const choices: DropdownChoice[] = []
+		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Outputs)) {
+			if (value.Capabilities.IsAudioRoutingSupported)
 				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
 		}
 		return choices

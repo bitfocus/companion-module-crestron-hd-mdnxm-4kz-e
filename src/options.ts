@@ -6,7 +6,7 @@ export const destinationOption = (choices: DropdownChoice[]): CompanionInputFiel
 		type: 'dropdown',
 		label: 'Destination',
 		choices: choices,
-		default: choices[0].id,
+		default: choices[0]?.id ?? '',
 	}
 }
 
@@ -16,6 +16,6 @@ export const sourceOption = (choices: DropdownChoice[]): CompanionInputFieldDrop
 		type: 'dropdown',
 		label: 'Source',
 		choices: choices,
-		default: choices[0].id,
+		default: choices[0]?.id ?? '',
 	}
 }

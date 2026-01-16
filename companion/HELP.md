@@ -8,11 +8,19 @@ The unit will lock out a user account after a number of failed login attempts, a
 
 ### Actions
 
--**Route Video**
+-**Audio - Clear Route**
+
+-**Audio - Route**
+
+-**Video - Clear Route**
+
+-**Video - Route**
 
 ### Feedbacks - Boolean
 
 -**Destination - Sink Connected**
+
+-**Destination - Audio Tally Source**
 
 -**Destination - Video Tally Source**
 
@@ -21,6 +29,8 @@ The unit will lock out a user account after a number of failed login attempts, a
 ### Feedbacks - Value
 
 -**Destination - Name**
+
+-**Destination - Audio Source**
 
 -**Destination - Video Source**
 
