@@ -8,13 +8,7 @@ The unit will lock out a user account after a number of failed login attempts, a
 
 ### Actions
 
--**Audio - Clear Route**
-
--**Audio - Route**
-
--**Video - Clear Route**
-
--**Video - Route**
+-**Output - Route Video**
 
 ### Feedbacks - Boolean
 

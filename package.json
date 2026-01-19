@@ -1,6 +1,6 @@
 {
 	"name": "crestron-hd-mdnxm-4kz-e",
-	"version": "0.4.3",
+	"version": "0.4.5",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
@@ -27,7 +27,7 @@
 		"@traversable/zod": "^0.0.57",
 		"axios": "^1.13.2",
 		"axios-cookiejar-support": "^6.0.5",
-		"es-toolkit": "^1.43.0",
+		"es-toolkit": "^1.44.0",
 		"p-queue": "^9.1.0",
 		"tough-cookie": "^6.0.0",
 		"ws": "^8.19.0",
