@@ -1,6 +1,6 @@
 {
 	"name": "crestron-hd-mdnxm-4kz-e",
-	"version": "0.4.7",
+	"version": "1.0.0",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/phillipivan/companion-module-crestron-HD-MDNXM-4KZ-E.git"
+		"url": "git+https://github.com/bitfocus/companion-module-crestron-hd-mdnxm-4kz-e.git"
 	},
 	"engines": {
 		"node": "^22.20",
