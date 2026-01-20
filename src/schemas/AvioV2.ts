@@ -205,7 +205,7 @@ export const Digital = z.object({
 	HdcpState: HdcpState,
 	SourceHdcp: SourceHdcp,
 	SourceContentStreamType: SourceContentStreamType,
-	ColorSpace: ColorSpace,
+	ColorSpace: ColorSpace.or(z.string()),
 	ColorDepth: ColorDepth,
 	Cec: Cec,
 	Status3D: Status3D,

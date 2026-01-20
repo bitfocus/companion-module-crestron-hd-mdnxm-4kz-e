@@ -100,7 +100,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		() => {
 			this.configUpdated(this.#config, this.#secrets).catch(() => {})
 		},
-		10000,
+		5000,
 		{ edges: ['trailing'], signal: this.#controller.signal },
 	)
 

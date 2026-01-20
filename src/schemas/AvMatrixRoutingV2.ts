@@ -23,13 +23,13 @@ export const VideoSource = AudioSource
 export type VideoSource = z.infer<typeof VideoSource>
 
 export const AuxConfig = z.object({
-	AudioSourceConfigured: AudioSource,
+	AudioSourceConfigured: AudioSource.or(z.string()),
 })
 
 export type AuxConfig = z.infer<typeof AuxConfig>
 
 export const OutputConfig = z.object({
-	VideoSourceConfigured: VideoSource,
+	VideoSourceConfigured: VideoSource.or(z.string()),
 })
 
 export type OutputConfig = z.infer<typeof OutputConfig>
