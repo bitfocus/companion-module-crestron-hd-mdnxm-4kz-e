@@ -202,7 +202,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.log('warn', `Socket Closed. Code ${event.code}: ${event.reason}`)
 			this.#statusManager.updateStatus(InstanceStatus.Disconnected, `WebSocket disconnected`)
 			this.#queue.clear()
-			// Try and reinitalise connection in 10 seconds
+			// Try and reinitalise connection in 5 seconds
 			// Calls configUpdated, to redo the full auth and connection process
 			this.throttledReconnect()
 		})
