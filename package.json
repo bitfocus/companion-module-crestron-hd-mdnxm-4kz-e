@@ -34,7 +34,7 @@
 		"zod": "^4.3.5"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^2.5.0",
+		"@companion-module/tools": "^2.6.1",
 		"@types/node": "^22.19.7",
 		"@types/ws": "^8.18.1",
 		"eslint": "^9.39.2",
