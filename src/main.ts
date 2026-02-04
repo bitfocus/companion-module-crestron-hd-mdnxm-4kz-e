@@ -166,9 +166,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			},
 		})
 		this.#socket.addEventListener('open', () => {
-			this.updateStatus(InstanceStatus.Ok, `WebSocket connected`)
+			this.#statusManager.updateStatus(InstanceStatus.Ok, `WebSocket connected`)
 			this.log('info', `Connected to wss://${host}`)
-
+			this.throttledReconnect.cancel()
 			//Initial queries
 			this.wsSend(wsApiGetCalls.avioV2).catch(() => {})
 			this.wsSend(wsApiGetCalls.routingMatrix).catch(() => {})
@@ -197,6 +197,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		this.#socket.addEventListener('error', (error) => {
 			this.log('error', `Error from websocket: ${error.message}`)
 			this.#statusManager.updateStatus(InstanceStatus.UnknownError, error.message)
+			this.throttledReconnect()
 		})
 		this.#socket.addEventListener('close', (event) => {
 			this.log('warn', `Socket Closed. Code ${event.code}: ${event.reason}`)
