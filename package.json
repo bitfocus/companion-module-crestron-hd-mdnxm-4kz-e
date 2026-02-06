@@ -1,6 +1,6 @@
 {
 	"name": "crestron-hd-mdnxm-4kz-e",
-	"version": "1.0.0",
+	"version": "1.0.1-reconnectfixes2",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
@@ -35,7 +35,7 @@
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.6.1",
-		"@types/node": "^22.19.8",
+		"@types/node": "^22.19.9",
 		"@types/ws": "^8.18.1",
 		"eslint": "^9.39.2",
 		"husky": "^9.1.7",

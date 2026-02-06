@@ -9,12 +9,12 @@ import { ApiCalls, type ApiCallValues, wsApiGetCalls } from './api.js'
 import type { MsgData } from './types.js'
 import { Crestron_HDMDNXM_4KZ } from './device.js'
 import type { FeedbackSubscriptions } from './types.js'
-import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import { throttle } from 'es-toolkit'
 import { WebSocket } from 'ws'
 import { CookieJar } from 'tough-cookie'
 import { wrapper } from 'axios-cookiejar-support'
-import { ZodError } from 'zod'
+import { handleError } from './errors.js'
 import PQueue from 'p-queue'
 import url from 'node:url'
 
@@ -28,13 +28,13 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	#axiosClient!: AxiosInstance
 	#jar = new CookieJar()
-	#socket!: WebSocket
+	#socket: WebSocket | undefined
 	#pingTimer: NodeJS.Timeout | undefined
 
 	#queue = new PQueue({ concurrency: 1, interval: 50, intervalCap: 1 })
 	#controller = new AbortController()
 
-	#statusManager = new StatusManager(this, { status: InstanceStatus.Connecting, message: 'Initialising' }, 2000)
+	public statusManager = new StatusManager(this, { status: InstanceStatus.Connecting, message: 'Initialising' }, 2000)
 
 	#feedbackIdsToCheck: Set<string> = new Set<string>()
 	public feedbackSubscriptions: FeedbackSubscriptions = Crestron_HDMDNXM_4KZ.feedbackSubscriptionTracker()
@@ -60,22 +60,21 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	// When module gets deleted
 	async destroy(): Promise<void> {
 		this.debug(`destroy ${this.id}:${this.label}`)
+		this.#controller.abort()
 		this.#queue.clear()
 		this.closeWebSocketConnection()
-		await this.logout()
-
-		this.#controller.abort()
-		this.#statusManager.destroy()
+		this.statusManager.destroy()
 	}
 
 	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets): Promise<void> {
 		this.#queue.clear()
+
 		this.#controller.abort()
 
 		this.#config = config
 		this.#secrets = secrets
 
-		this.#statusManager.updateStatus(InstanceStatus.Connecting)
+		this.statusManager.updateStatus(InstanceStatus.Connecting)
 		this.#controller = new AbortController()
 
 		process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = config.selfSigned ? '0' : '1'
@@ -88,7 +87,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.createWebSocketConnection(config.host)
 			this.throttledUpdateActionFeedbackDefs()
 		} catch (err) {
-			this.handleError(err)
+			handleError(err, this)
 			if (axios.isAxiosError(err)) {
 				// Only attempt a reconnect if could not reach unit
 				if (err.response === undefined) this.throttledReconnect()
@@ -98,31 +97,30 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	throttledReconnect = throttle(
 		() => {
+			if (this.#controller.signal.aborted) return
 			this.configUpdated(this.#config, this.#secrets).catch(() => {})
 		},
 		5000,
-		{ edges: ['trailing'], signal: this.#controller.signal },
+		{ edges: ['trailing'] },
 	)
 
 	private async createClient(host = this.#config.host): Promise<void> {
 		if (!host) {
-			this.#statusManager.updateStatus(InstanceStatus.BadConfig, 'No host')
+			this.statusManager.updateStatus(InstanceStatus.BadConfig, 'No host')
 			return
 		}
 		await this.#jar.removeAllCookies()
-		this.#axiosClient = wrapper(
-			axios.create({ baseURL: `https://${host}`, signal: this.#controller.signal, jar: this.#jar }),
-		)
+		this.#axiosClient = wrapper(axios.create({ baseURL: `https://${host}`, jar: this.#jar }))
 	}
 
 	private closeWebSocketConnection(): void {
 		if (this.#socket) {
-			this.#socket.terminate()
-			//this.#socket.close(1000, 'Resetting connection')
 			this.#socket.removeAllListeners('open')
 			this.#socket.removeAllListeners('message')
 			this.#socket.removeAllListeners('close')
 			this.#socket.removeAllListeners('error')
+			this.#socket.terminate()
+			this.#socket = undefined
 		}
 		if (this.#pingTimer) {
 			clearTimeout(this.#pingTimer)
@@ -145,28 +143,39 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	private createWebSocketConnection(host = this.#config.host): void {
 		this.closeWebSocketConnection()
+		this.throttledReconnect.cancel()
+
 		if (!host) throw new Error('No host')
+
 		const wsUrl = `wss://${this.#config.host}${ApiCalls.WsUpgrade}`
 		this.debug(`Connecting to WebSocket at ${wsUrl}`)
-		this.#socket = new WebSocket(wsUrl, {
-			rejectUnauthorized: !this.#config.selfSigned,
-			headers: {
-				Cookie: this.#jar.getCookieStringSync(`https://${host}`),
-				Upgrade: 'websocket',
-				Connection: 'Upgrade',
-				'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==',
-				'Sec-WebSocket-Version': '13',
-				'User-Agent': 'CompanionModuleClient/1.0',
-				Origin: `https://${host}`,
-				Referer: `https://${host}/userlogin.html`,
-				'Accept-Encoding': 'gzip, deflate, br',
-				'Accept-Language': 'en-US,en;q=0.9',
-				'Sec-WebSocket-Extensions': 'permessage-deflate; client_max_window_bits',
-				'CREST-XSRF-TOKEN': this.#CREST_XSRF_TOKEN,
-			},
-		})
+		try {
+			this.#socket = new WebSocket(wsUrl, {
+				rejectUnauthorized: !this.#config.selfSigned,
+				headers: {
+					Cookie: this.#jar.getCookieStringSync(`https://${host}`),
+					Upgrade: 'websocket',
+					Connection: 'Upgrade',
+					'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==',
+					'Sec-WebSocket-Version': '13',
+					'User-Agent': 'CompanionModuleClient/1.0',
+					Origin: `https://${host}`,
+					Referer: `https://${host}/userlogin.html`,
+					'Accept-Encoding': 'gzip, deflate, br',
+					'Accept-Language': 'en-US,en;q=0.9',
+					'Sec-WebSocket-Extensions': 'permessage-deflate; client_max_window_bits',
+					'CREST-XSRF-TOKEN': this.#CREST_XSRF_TOKEN,
+				},
+			})
+		} catch (err) {
+			this.log('error', `Failed to create WebSocket: ${err instanceof Error ? err.message : 'Unknown error'}`)
+			this.statusManager.updateStatus(InstanceStatus.UnknownError, 'WebSocket creation failed')
+			this.throttledReconnect()
+			return
+		}
+
 		this.#socket.addEventListener('open', () => {
-			this.#statusManager.updateStatus(InstanceStatus.Ok, `WebSocket connected`)
+			this.statusManager.updateStatus(InstanceStatus.Ok, `WebSocket connected`)
 			this.log('info', `Connected to wss://${host}`)
 			this.throttledReconnect.cancel()
 			//Initial queries
@@ -191,17 +200,17 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				}
 				this.throttledCheckFeedbacksById()
 			} catch (err) {
-				this.handleError(err)
+				handleError(err, this)
 			}
 		})
 		this.#socket.addEventListener('error', (error) => {
 			this.log('error', `Error from websocket: ${error.message}`)
-			this.#statusManager.updateStatus(InstanceStatus.UnknownError, error.message)
+			this.statusManager.updateStatus(InstanceStatus.UnknownError, error.message)
 			this.throttledReconnect()
 		})
 		this.#socket.addEventListener('close', (event) => {
 			this.log('warn', `Socket Closed. Code ${event.code}: ${event.reason}`)
-			this.#statusManager.updateStatus(InstanceStatus.Disconnected, `WebSocket disconnected`)
+			this.statusManager.updateStatus(InstanceStatus.Disconnected, `WebSocket disconnected`)
 			this.#queue.clear()
 			// Try and reinitalise connection in 5 seconds
 			// Calls configUpdated, to redo the full auth and connection process
@@ -211,10 +220,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	public async httpsGet(path: ApiCallValues, priority: number = 0): Promise<AxiosResponse<any, any>> {
 		return await this.#queue.add(
-			async () => {
+			async ({ signal }) => {
 				if (!this.#axiosClient) throw new Error('Axios Client not initialised')
-				return await this.#axiosClient.get(path).then((response: AxiosResponse<any, any>) => {
-					this.#statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
+				return await this.#axiosClient.get(path, { signal }).then((response: AxiosResponse<any, any>) => {
+					this.statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
 					this.debug(`Successful HTTPS Get from path: ${path}\nResponse data:`)
 					this.debug(response.data)
 					return response
@@ -231,11 +240,11 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		priority: number = 1,
 	): Promise<AxiosResponse<any, any>> {
 		return await this.#queue.add(
-			async () => {
+			async ({ signal }) => {
 				if (!this.#axiosClient) throw new Error('Axios Client not initialised')
 				if (this.#CREST_XSRF_TOKEN) headers[`CREST-XSRF-TOKEN`] = this.#CREST_XSRF_TOKEN
 				const response = await this.#axiosClient
-					.post(path, data, { headers: headers })
+					.post(path, data, { headers: headers, signal: signal })
 					.then((response: AxiosResponse<any, any>) => {
 						if (
 							response.headers['CREST-XSRF-TOKEN'] &&
@@ -244,7 +253,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 							this.debug(`Updated XSRF Token: ${response.headers['CREST-XSRF-TOKEN']}`)
 							this.#CREST_XSRF_TOKEN = response.headers['CREST-XSRF-TOKEN']
 						}
-						this.#statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
+						this.statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
 						this.debug(
 							`Successful HTTPS Post to path: ${path} with post data ${typeof data == 'object' ? JSON.stringify(data) : typeof data == 'undefined' ? '' : data?.toString()}\nResponse data:`,
 						)
@@ -259,13 +268,33 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	public async wsSend(data: string, priority: number = 1): Promise<void> {
 		return this.#queue.add(
-			async () => {
+			async ({ signal }) => {
 				if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
 					return new Promise<void>((resolve, reject) => {
-						this.#socket.send(data, (err) => {
+						if (signal?.aborted) {
+							reject(new Error(`Message send aborted: ${data}`))
+							return
+						}
+
+						let settled = false
+
+						const abortHandler = () => {
+							if (!settled) {
+								settled = true
+								reject(new Error(`Message send aborted: ${data}`))
+							}
+						}
+						signal?.addEventListener('abort', abortHandler)
+
+						this.#socket?.send(data, (err) => {
+							signal?.removeEventListener('abort', abortHandler)
+
+							if (settled) return // Already rejected by abort
+							settled = true
+
 							if (err) {
 								this.log('warn', `WebSocket failed to send ${data} with error ${err.message}`)
-								this.handleError(err)
+								handleError(err, this)
 								reject(err)
 							} else {
 								this.debug(`Sent WebSocket Message: ${data}`)
@@ -308,187 +337,26 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		return true
 	}
 
-	private async logout(): Promise<void> {
-		try {
-			this.closeWebSocketConnection()
-			await this.httpsGet(ApiCalls.logout, 2)
-			await this.#jar.removeAllCookies()
-		} catch (err: unknown) {
-			this.log('warn', `Logout failed`)
-			this.handleError(err)
-		}
-	}
-
-	public handleError(err: unknown): void {
-		if (axios.isAxiosError(err)) {
-			this.#handleAxiosError(err)
-		} else if (err instanceof ZodError) {
-			this.#handleZodError(err)
-		} else {
-			this.#handleUnknownError(err)
-		}
-	}
-
-	#handleAxiosError(err: AxiosError): void {
-		this.debug(err)
-
-		if (err.response) {
-			// Server responded with error status (4xx, 5xx)
-			this.#handleHttpError(err)
-		} else if (err.request) {
-			// Request sent but no response received (network/timeout issues)
-			this.#handleNetworkError(err)
-		} else {
-			// Error during request setup
-			this.#statusManager.updateStatus(InstanceStatus.UnknownError)
-			this.log('error', `Request setup error: ${err.message}`)
-		}
-	}
-
-	#handleHttpError(err: AxiosError): void {
-		const status = err.response?.status
-
-		// Set status based on HTTP response code
-		if (status && status >= 500) {
-			this.#statusManager.updateStatus(InstanceStatus.UnknownError)
-			this.log('error', `Server error ${status}: ${err.message}`)
-		} else if (status === 401 || status === 403) {
-			this.#statusManager.updateStatus(InstanceStatus.AuthenticationFailure)
-			this.log('error', `Authentication error ${status}: Check credentials`)
-		} else if (status === 404) {
-			this.#statusManager.updateStatus(InstanceStatus.UnknownWarning)
-			this.log('error', `Not found ${status}: Endpoint may have changed`)
-		} else if (status === 429) {
-			this.#statusManager.updateStatus(InstanceStatus.UnknownWarning)
-			this.log('error', `Rate limited ${status}: Too many requests`)
-		} else {
-			this.#statusManager.updateStatus(InstanceStatus.UnknownWarning)
-			this.log('error', `HTTP ${status}: ${err.message}`)
-		}
-
-		// Log response data if useful
-		if (err.response?.data && typeof err.response.data === 'string') {
-			this.log('error', `Response: ${err.response.data}`)
-		}
-	}
-
-	#handleNetworkError(err: AxiosError): void {
-		const code = err.code
-
-		switch (code) {
-			case 'ECONNREFUSED':
-				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-				this.log('error', 'Connection refused: Device may be offline or unreachable')
-				break
-
-			case 'ETIMEDOUT':
-			case 'ECONNABORTED':
-				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-				this.log('error', `Request timed out: Device not responding (${code})`)
-				break
-
-			case 'ENOTFOUND':
-			case 'EAI_AGAIN':
-				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-				this.log('error', `DNS resolution failed: Cannot find device hostname (${code})`)
-				break
-
-			case 'ENETUNREACH':
-			case 'EHOSTUNREACH':
-				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-				this.log('error', `Network unreachable: Check network connectivity (${code})`)
-				break
-
-			case 'ECONNRESET':
-				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-				this.log('error', 'Connection reset: Device closed connection unexpectedly')
-				break
-
-			case 'EPIPE':
-				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-				this.log('error', 'Broken pipe: Connection lost during transmission')
-				break
-
-			case 'ECANCELED':
-				// Request was cancelled (e.g., by AbortController)
-				this.log('warn', 'Request cancelled')
-				// Don't change status for cancellations
-				break
-
-			case 'ERR_NETWORK':
-				// Generic network error (often seen in browsers)
-				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-				this.log('error', 'Network error: Check device connection')
-				break
-
-			case 'ERR_BAD_REQUEST':
-				// Request was malformed
-				this.#statusManager.updateStatus(InstanceStatus.UnknownError)
-				this.log('error', `Bad request: ${err.message}`)
-				break
-
-			case 'ERR_BAD_RESPONSE':
-				// Response was malformed
-				this.#statusManager.updateStatus(InstanceStatus.UnknownWarning)
-				this.log('error', `Invalid response from device: ${err.message}`)
-				break
-
-			default:
-				// Unknown network error
-				this.#statusManager.updateStatus(InstanceStatus.ConnectionFailure)
-				this.log('error', `Network error${code ? ` (${code})` : ''}: ${err.message}`)
-				break
-		}
-
-		// Additional context
-		if (err.config?.url) {
-			this.log('debug', `Failed URL: ${err.config.url}`)
-		}
-	}
-
-	#handleZodError(err: ZodError): void {
-		this.debug(err)
-
-		// Format Zod errors more readably
-		const formattedErrors = err.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('\n  ')
-
-		this.log('warn', `Invalid data returned:\n  ${formattedErrors}`)
-	}
-
-	#handleUnknownError(err: unknown): void {
-		this.#statusManager.updateStatus(InstanceStatus.UnknownError)
-
-		// Safely stringify unknown errors
-		const errorMessage =
-			// eslint-disable-next-line @typescript-eslint/no-base-to-string
-			err instanceof Error ? err.message : typeof err == 'object' ? JSON.stringify(err) : String(err)
-
-		this.log('error', `Unknown error: ${errorMessage}`)
-
-		// Log stack trace if available
-		if (err instanceof Error && err.stack) {
-			this.debug(err.stack)
-		}
-	}
-
 	throttledCheckFeedbacksById = throttle(
 		() => {
+			if (this.#controller.signal.aborted) return
 			if (this.#feedbackIdsToCheck.size === 0) return
 			this.checkFeedbacksById(...Array.from(this.#feedbackIdsToCheck))
 			this.#feedbackIdsToCheck.clear()
 		},
 		50,
-		{ edges: ['trailing'], signal: this.#controller.signal },
+		{ edges: ['trailing'] },
 	)
 
 	throttledUpdateActionFeedbackDefs = throttle(
 		() => {
+			if (this.#controller.signal.aborted) return
 			this.updateActions() // export actions
 			this.updateFeedbacks() // export feedbacks
 			this.updateVariableDefinitions() // export variable definitions
 		},
 		5000,
-		{ edges: ['trailing'], signal: this.#controller.signal },
+		{ edges: ['trailing'] },
 	)
 
 	// Return config fields for web config
