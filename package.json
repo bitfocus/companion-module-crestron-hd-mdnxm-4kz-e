@@ -25,7 +25,7 @@
 	"dependencies": {
 		"@companion-module/base": "~1.14.1",
 		"@traversable/zod": "^0.0.57",
-		"axios": "^1.13.4",
+		"axios": "^1.13.5",
 		"axios-cookiejar-support": "^6.0.5",
 		"es-toolkit": "^1.44.0",
 		"p-queue": "^9.1.0",
