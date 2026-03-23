@@ -59,6 +59,7 @@ export const InputPortTypes = [
 	'DisplayPort',
 	'Airmedia',
 	'Streaming',
+	'Usb',
 ] as const satisfies string[]
 
 export const InputPortType = z.enum(InputPortTypes)

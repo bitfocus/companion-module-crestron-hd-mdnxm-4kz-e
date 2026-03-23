@@ -77,9 +77,14 @@ export type PriorityList = z.infer<typeof PriorityList>
 
 export const RoutePriorities = z.record(
 	Output,
-	z.object({
-		PrioirtyList: PriorityList, // Accept the typo from the data
-	}),
+	z
+		.object({
+			PriorityList: PriorityList.optional(), // HD-TXU (correct spelling)
+			PrioirtyList: PriorityList.optional(), // HD-MDNXM (API typo)
+		})
+		.transform((val) => ({
+			PriorityList: val.PriorityList ?? val.PrioirtyList ?? {},
+		})),
 )
 
 export type RoutePriorities = z.infer<typeof RoutePriorities>
