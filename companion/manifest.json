@@ -21,6 +21,13 @@
 	},
 	"legacyIds": [],
 	"manufacturer": "Crestron",
-	"products": ["HD-MD4X1-4KZ-E", "HD-MD4X2-4KZ-E", "HD-MD8X8-4KZ-E"],
+	"products": [
+		"HD-MD4X1-4KZ-E",
+		"HD-MD4X2-4KZ-E",
+		"HD-MD8X8-4KZ-E",
+		"HD-TXU-4KZ-211",
+		"HD-TXU-4KZ-211-CHGR",
+		"HD-TXU-4KZ-111-E"
+	],
 	"keywords": ["HDMI", "Matrix Switcher", "4K"]
 }
