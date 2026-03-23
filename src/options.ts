@@ -19,3 +19,17 @@ export const sourceOption = (choices: DropdownChoice[]): CompanionInputFieldDrop
 		default: choices[0]?.id ?? '',
 	}
 }
+
+export const autoRouteOption = (): CompanionInputFieldDropdown => {
+	return {
+		id: 'enable',
+		type: 'dropdown',
+		label: 'Enable',
+		choices: [
+			{ id: 'on', label: 'Enabled' },
+			{ id: 'off', label: 'Disabled' },
+			{ id: 'toggle', label: 'Toggle' },
+		],
+		default: 'toggle',
+	}
+}

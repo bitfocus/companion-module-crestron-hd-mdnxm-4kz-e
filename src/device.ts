@@ -142,4 +142,8 @@ export class Crestron_HDMDNXM_4KZ {
 	get routes(): Readonly<AvMatrixRoutingV2.Routes> {
 		return this.#HDMDNXM.Device.AvMatrixRoutingV2.Routes
 	}
+
+	get autoRoute(): boolean {
+		return this.#HDMDNXM.Device.AvMatrixRoutingV2.IsAutomaticRoutingEnabled
+	}
 }

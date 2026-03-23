@@ -49,8 +49,8 @@ export function UpdateActions(self: ModuleInstance): void {
 			return undefined
 		},
 	}
-	/* actions.clearVideo = {
-		name: 'Output - Clear Routes',
+	actions.clearVideo = {
+		name: 'Output - Clear Route',
 		options: [Options.destinationOption(self.crestronDevice.outputChoicesSupportingVideoRouting)],
 		callback: async (event) => {
 			const dest = event.options.destination?.toString() ?? ''
@@ -59,7 +59,18 @@ export function UpdateActions(self: ModuleInstance): void {
 			}
 			await self.wsSend(wsApiPostCalls.clearRoute(dest))
 		},
-	} */
+	}
+	actions.autoRoute = {
+		name: 'Auto Route',
+		options: [Options.autoRouteOption()],
+		callback: async (event) => {
+			const enable = event.options.enable?.toString() ?? ''
+			let state = !self.crestronDevice.autoRoute
+			if (enable == 'on') state = true
+			else if (enable == 'off') state = false
+			await self.wsSend(wsApiPostCalls.autoRoute(state))
+		},
+	}
 	if (
 		self.crestronDevice.inputChoicesSupportingAudioRouting.length > 0 &&
 		self.crestronDevice.outputChoicesSupportingAudioRouting.length > 0
