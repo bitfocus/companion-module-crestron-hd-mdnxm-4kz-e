@@ -206,7 +206,7 @@ function handleZodError(err: ZodError, instance: ModuleInstance): void {
 }
 
 function handleUnknownError(err: unknown, instance: ModuleInstance): void {
-	instance.statusManager.updateStatus(InstanceStatus.UnknownError)
+	//instance.statusManager.updateStatus(InstanceStatus.UnknownError)
 
 	// Safely stringify unknown errors
 	const errorMessage =
