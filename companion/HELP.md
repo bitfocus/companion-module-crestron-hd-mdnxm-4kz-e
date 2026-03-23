@@ -8,9 +8,15 @@ The unit will lock out a user account after a number of failed login attempts, a
 
 ### Actions
 
+-**Auto Route**
+
+-**Output - Clear Route**
+
 -**Output - Route Video**
 
 ### Feedbacks - Boolean
+
+-**Auto Route**
 
 -**Destination - Sink Connected**
 
