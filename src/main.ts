@@ -78,10 +78,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		this.#controller = new AbortController()
 
 		process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = config.selfSigned ? '0' : '1'
+		await this.setupConnection(config)
+	}
+
+	private async setupConnection(config: ModuleConfig): Promise<void> {
 		try {
 			await this.createClient(config.host)
 			await this.login()
-			this.log('info', `Logged in to ${this.#config.host}`)
+			this.log('info', `Logged in to ${config.host}`)
 			const deviceQuery = await this.httpsGet(ApiCalls.Device)
 			this.crestronDevice = Crestron_HDMDNXM_4KZ.createNewDevice(deviceQuery)
 			this.createWebSocketConnection(config.host)
@@ -98,7 +102,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	throttledReconnect = throttle(
 		() => {
 			if (this.#controller.signal.aborted) return
-			this.configUpdated(this.#config, this.#secrets).catch(() => {})
+			this.setupConnection(this.#config).catch(() => {})
 		},
 		5000,
 		{ edges: ['trailing'] },
