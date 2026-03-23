@@ -19,20 +19,25 @@ export const wsApiGetCalls = {
 } as const satisfies Record<string, string>
 
 export const wsApiPostCalls = {
+	autoRoute: (autoroute: boolean): string => {
+		return JSON.stringify({
+			Device: { AvMatrixRoutingV2: { IsAutomaticRoutingEnabled: autoroute } },
+		})
+	},
 	clearRoute: (output: string): string => {
-		return JSON.stringify({ Device: { AvMatrixRouting: { Routes: { [output]: {} } } } })
+		return JSON.stringify({ Device: { AvMatrixRoutingV2: { Routes: { [output]: {} } } } })
 	},
 	routeVideo: (output: string, source: string): string => {
-		return JSON.stringify({ Device: { AvMatrixRouting: { Routes: { [output]: { VideoSource: source } } } } })
+		return JSON.stringify({ Device: { AvMatrixRoutingV2: { Routes: { [output]: { VideoSource: source } } } } })
 	},
 	routeAudioVideo: (output: string, source: string): string => {
 		return JSON.stringify({
-			Device: { AvMatrixRouting: { Routes: { [output]: { AudioSource: source, VideoSource: source } } } },
+			Device: { AvMatrixRoutingV2: { Routes: { [output]: { AudioSource: source, VideoSource: source } } } },
 		})
 	},
 	routeAudio: (output: string, source: string): string => {
 		return JSON.stringify({
-			Device: { AvMatrixRouting: { Routes: { [output]: { AudioSource: source } } } },
+			Device: { AvMatrixRoutingV2: { Routes: { [output]: { AudioSource: source } } } },
 		})
 	},
-} satisfies Record<string, (output: string, source: string) => string>
+} satisfies Record<string, (...args: never[]) => string>
