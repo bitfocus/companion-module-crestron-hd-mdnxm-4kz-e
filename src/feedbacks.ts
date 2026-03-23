@@ -53,6 +53,12 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 		],
 		callback: (feedback) => {
 			const dest = feedback.options.destination?.toString() ?? ''
+			const config = self.crestronDevice.AvRoutingMatrixV2.Config
+			if (config) {
+				const destConfig = config[dest]
+				if ('VideoSourceConfigured' in destConfig && destConfig.VideoSourceConfigured == 'No Source')
+					return feedback.options.name ? 'No Source' : 0
+			}
 			let source: string = ''
 			const routes = self.crestronDevice.routes
 			if (dest && dest in routes) {
@@ -120,6 +126,11 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			const dest = feedback.options.destination?.toString() ?? ''
 			const source = feedback.options.source?.toString() ?? ''
 			const routes = self.crestronDevice.routes
+			const config = self.crestronDevice.AvRoutingMatrixV2.Config
+			if (config) {
+				const destConfig = config[dest]
+				if ('VideoSourceConfigured' in destConfig && destConfig.VideoSourceConfigured == 'No Source') return false
+			}
 			if (dest && dest in routes) {
 				const route = routes[dest]
 				if (route && 'VideoSource' in route) {
@@ -200,6 +211,12 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			const dest = feedback.options.destination?.toString() ?? ''
 			let source: string = ''
 			const routes = self.crestronDevice.routes
+			const config = self.crestronDevice.AvRoutingMatrixV2.Config
+			if (config) {
+				const destConfig = config[dest]
+				if ('AudioSourceConfigured' in destConfig && destConfig.AudioSourceConfigured == 'No Source')
+					return feedback.options.name ? 'No Source' : 0
+			}
 			if (dest && dest in routes) {
 				const route = routes[dest]
 				if (route && 'AudioSource' in route) {
@@ -228,6 +245,11 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 			const dest = feedback.options.destination?.toString() ?? ''
 			const source = feedback.options.source?.toString() ?? ''
 			const routes = self.crestronDevice.routes
+			const config = self.crestronDevice.AvRoutingMatrixV2.Config
+			if (config) {
+				const destConfig = config[dest]
+				if ('AudioSourceConfigured' in destConfig && destConfig.AudioSourceConfigured == 'No Source') return false
+			}
 			if (dest && dest in routes) {
 				const route = routes[dest]
 				if (route && 'AudioSource' in route) {
@@ -250,6 +272,18 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				}
 			}
 			return undefined
+		},
+		subscribe: feedbackSubscribe(self, ['AvMatrixRoutingV2']),
+		unsubscribe: feedbackUnsubscribe(self, ['AvMatrixRoutingV2']),
+	}
+	feedbacks.automaticRouting = {
+		name: 'Auto Route',
+		description: `Is Auto Route enabled`,
+		type: 'boolean',
+		defaultStyle: styles.blackOnRed,
+		options: [],
+		callback: (_feedback) => {
+			return self.crestronDevice.autoRoute
 		},
 		subscribe: feedbackSubscribe(self, ['AvMatrixRoutingV2']),
 		unsubscribe: feedbackUnsubscribe(self, ['AvMatrixRoutingV2']),
