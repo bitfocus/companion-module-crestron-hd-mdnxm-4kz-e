@@ -23,6 +23,7 @@ export class StatusManager {
 	private debounceTimer: NodeJS.Timeout | undefined
 	#throttleTimeout: number = 1000
 	#isDestroyed: boolean = false
+	private setNewStatus!: ((newStatus?: Status) => void) & { flush: () => void }
 
 	constructor(
 		self: InstanceBase<ModuleConfig, ModuleSecrets>,
@@ -30,8 +31,30 @@ export class StatusManager {
 		throttleTimeout: number = 2000,
 	) {
 		this.#parentInstance = self
-		this.setNewStatus(initStatus)
+
 		this.#throttleTimeout = throttleTimeout
+
+		/**
+		 * Perform the status update
+		 * @param newStatus
+		 *
+		 */
+
+		this.setNewStatus = throttle(
+			(newStatus: Status = this.#newStatus) => {
+				if (newStatus.message === null || typeof newStatus.message !== 'object') {
+					this.#parentInstance.updateStatus(newStatus.status, newStatus.message)
+				} else {
+					this.#parentInstance.updateStatus(newStatus.status, JSON.stringify(newStatus.message))
+				}
+				this.#currentStatus = newStatus
+			},
+			this.#throttleTimeout,
+			{
+				edges: ['trailing'],
+			},
+		)
+		this.setNewStatus(initStatus)
 	}
 
 	/**
@@ -67,27 +90,6 @@ export class StatusManager {
 		}
 		this.setNewStatus(this.#newStatus)
 	}
-
-	/**
-	 * Perform the status update
-	 * @param newStatus
-	 *
-	 */
-
-	private setNewStatus = throttle(
-		(newStatus: Status = this.#newStatus) => {
-			if (typeof newStatus.message === 'object') {
-				this.#parentInstance.updateStatus(newStatus.status, JSON.stringify(newStatus.message))
-			} else {
-				this.#parentInstance.updateStatus(newStatus.status, newStatus.message)
-			}
-			this.#currentStatus = newStatus
-		},
-		this.#throttleTimeout,
-		{
-			edges: ['trailing'],
-		},
-	)
 
 	/**
 	 * Clears any running debounce timer, sets status to disconnected
