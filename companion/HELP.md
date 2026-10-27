@@ -10,30 +10,32 @@ If the connection drops, the module retries every 5 seconds until the unit is re
 
 ### Actions
 
--**Auto Route**
+- **Auto Route**
 
--**Output - Clear Route**
+- **Output - Clear Route**
 
--**Output - Route Video**
+- **Output - Route Video**
+
+- **Output - Route Audio** (only offered when the unit has audio routable inputs and outputs)
 
 ### Feedbacks - Boolean
 
--**Auto Route**
+- **Auto Route**
 
--**Destination - Sink Connected**
+- **Destination - Sink Connected**
 
--**Destination - Audio Tally Source**
+- **Destination - Audio Tally Source**
 
--**Destination - Video Tally Source**
+- **Destination - Video Tally Source**
 
--**Source - Sync Detected**
+- **Source - Sync Detected**
 
 ### Feedbacks - Value
 
--**Destination - Name**
+- **Destination - Name**
 
--**Destination - Audio Source**
+- **Destination - Audio Source**
 
--**Destination - Video Source**
+- **Destination - Video Source**
 
--**Source - Name**
+- **Source - Name**
