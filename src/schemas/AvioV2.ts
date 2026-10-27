@@ -62,7 +62,7 @@ export const InputPortTypes = [
 	'Usb',
 ] as const satisfies string[]
 
-export const InputPortType = z.enum(InputPortTypes)
+export const InputPortType = z.enum(InputPortTypes).or(z.string())
 
 export type InputPortType = z.infer<typeof InputPortType>
 
@@ -129,7 +129,7 @@ export const EdidApplyErrors = [
 	'Missing default timing.',
 ] as const satisfies string[]
 
-export const EdidApplyError = z.enum(EdidApplyErrors)
+export const EdidApplyError = z.enum(EdidApplyErrors).or(z.string())
 
 export type EdidApplyError = z.infer<typeof EdidApplyError>
 
@@ -144,7 +144,7 @@ export const HdcpReceiverCapabilities = [
 	'HDCP 2.x Support',
 ] as const satisfies string[]
 
-export const HdcpReceiverCapability = z.enum(HdcpReceiverCapabilities)
+export const HdcpReceiverCapability = z.enum(HdcpReceiverCapabilities).or(z.string())
 
 export type HdcpReceiverCapability = z.infer<typeof HdcpReceiverCapability>
 
@@ -156,13 +156,13 @@ export const HdcpStates = [
 	'NonHdcpSource',
 ] as const satisfies string[]
 
-export const HdcpState = z.enum(HdcpStates)
+export const HdcpState = z.enum(HdcpStates).or(z.string())
 
 export type HdcpState = z.infer<typeof HdcpState>
 
 export const SourceHdcps = ['No Signal', 'Non-HDCP', 'HDCP 1.x', 'HDCP 2.x'] as const satisfies string[]
 
-export const SourceHdcp = z.enum(SourceHdcps)
+export const SourceHdcp = z.enum(SourceHdcps).or(z.string())
 
 export type SourceHdcp = z.infer<typeof SourceHdcp>
 
@@ -396,7 +396,7 @@ export const HdcpTransmitterModes = [
 	'N/A',
 ] as const satisfies string[]
 
-export const HdcpTransmitterMode = z.enum(HdcpTransmitterModes)
+export const HdcpTransmitterMode = z.enum(HdcpTransmitterModes).or(z.string())
 
 export type HdcpTransmitterMode = z.infer<typeof HdcpTransmitterMode>
 

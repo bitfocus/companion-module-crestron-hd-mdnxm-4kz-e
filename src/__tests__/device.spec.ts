@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { Crestron_HDMDNXM_4KZ } from '../device.js'
 import type { AxiosResponse } from 'axios'
 import type { WebSocket } from 'ws'
-import { makeDeviceData, makeInput, makeOutput } from './fixtures.js'
+import { makeDeviceData, makeInput, makeInputPort, makeOutput, makeOutputPort } from './fixtures.js'
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
@@ -367,6 +367,44 @@ describe('Crestron_HDMDNXM_4KZ', () => {
 		it('throws (or returns gracefully) on malformed WebSocket data', () => {
 			const badMsg = { data: '{not valid json}', type: 'message', target: {} } as WebSocket.MessageEvent
 			expect(() => device.partialUpdateDeviceFromWebSocketMessage(badMsg)).toThrow()
+		})
+	})
+
+	// The module never reads these fields, so a value the docs don't list used to fail the whole parse: the device
+	// couldn't be loaded, and a WebSocket message carrying one was dropped along with any route change in it
+	describe('values the API docs do not list, in fields the module does not read', () => {
+		const inputPort = makeInputPort({
+			PortType: 'NewPortType',
+			EdidApplyError: 'New error',
+			Digital: {
+				...makeInputPort().Digital,
+				HdcpReceiverCapability: 'HDCP 3.0',
+				HdcpState: 'NewState',
+				SourceHdcp: 'HDCP 3.0',
+			},
+		})
+		const outputPort = makeOutputPort({ Digital: { ...makeOutputPort().Digital, HdcpTransmitterMode: 'New mode' } })
+
+		it('loads a device reporting them', () => {
+			const data = makeDeviceData({
+				inputs: { Input1: makeInput('HDMI 1', {}, inputPort) },
+				outputs: { Output1: { ...makeOutput('DM OUT 1'), OutputInfo: { Ports: { Port1: outputPort } } } },
+			})
+			const device = Crestron_HDMDNXM_4KZ.createNewDevice(makeAxiosResponse(data))
+			expect(device.inputChoices).toEqual([{ id: 'Input1', label: 'Input1: HDMI 1' }])
+		})
+
+		it('applies the rest of a WebSocket message carrying them', () => {
+			const device = Crestron_HDMDNXM_4KZ.createNewDevice(makeAxiosResponse(makeDeviceData()))
+			device.partialUpdateDeviceFromWebSocketMessage(
+				makeWsMessage({
+					Device: {
+						AvioV2: { Inputs: { Input1: { InputInfo: { Ports: { Port1: { Digital: { HdcpState: 'NewState' } } } } } } },
+						AvMatrixRoutingV2: { Routes: { Output1: { VideoSource: 'Input2' } } },
+					},
+				}),
+			)
+			expect(device.routes['Output1']).toMatchObject({ VideoSource: 'Input2' })
 		})
 	})
 })
