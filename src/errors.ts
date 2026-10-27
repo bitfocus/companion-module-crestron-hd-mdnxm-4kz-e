@@ -3,6 +3,7 @@ import type ModuleInstance from './main.js'
 
 import axios, { AxiosError } from 'axios'
 import { ZodError } from 'zod'
+import { describeAxiosError } from './logging.js'
 
 export const HttpStatusCodes = {
 	100: InstanceStatus.Ok,
@@ -93,7 +94,7 @@ export function handleError(err: unknown, instance: ModuleInstance): void {
 }
 
 function handleAxiosError(err: AxiosError, instance: ModuleInstance): void {
-	instance.debug(err)
+	instance.debug(describeAxiosError(err))
 
 	if (err.response) {
 		// Server responded with error status (4xx, 5xx)

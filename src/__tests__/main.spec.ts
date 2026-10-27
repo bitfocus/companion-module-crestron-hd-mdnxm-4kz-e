@@ -78,8 +78,8 @@ vi.mock('ws', async () => {
 	return { WebSocket }
 })
 
-function ok(data: unknown = '') {
-	return { data, status: 200, statusText: 'OK', headers: new AxiosHeaders() }
+function ok(data: unknown = '', headers: Record<string, string | string[]> = {}) {
+	return { data, status: 200, statusText: 'OK', headers: new AxiosHeaders(headers) }
 }
 
 function httpError(status: number): AxiosError {
@@ -272,6 +272,27 @@ describe('connection', () => {
 			reply('GET', ApiCalls.Device, async () => ok({ Device: {} }))
 			await start()
 			expect(updateStatus).toHaveBeenLastCalledWith(InstanceStatus.UnknownError, 'Connection failed')
+		})
+	})
+
+	describe('logging', () => {
+		// The verbose log from a user on 2026-10-27 held the unit's session cookies and its 802.1X password
+		it('keeps session cookies, the password and unparsed device settings out of the verbose log', async () => {
+			reply('GET', ApiCalls.login, async () => ok('<html>', { 'set-cookie': ['TRACKID=trackid-value; Path=/'] }))
+			reply('POST', ApiCalls.login, async () => ok('', { 'set-cookie': ['userid=userid-value;Path=/;Secure'] }))
+			reply('GET', ApiCalls.Device, async () =>
+				ok({ Device: { ...makeDeviceData().Device, Ieee8021x: { Password: 'dot1x-value' } } }),
+			)
+			const log = vi.spyOn(instance, 'log')
+			await instance.init({ ...CONFIG, verbose: true }, true, { passwd: 'login-password-value' })
+			await vi.advanceTimersByTimeAsync(ATTEMPT)
+
+			const logged = JSON.stringify(log.mock.calls)
+			expect(logged).toContain('Successful HTTPS Get from path: /Device')
+			expect(logged).toContain('userid=<redacted>')
+			for (const secret of ['trackid-value', 'userid-value', 'login-password-value', 'dot1x-value']) {
+				expect(logged).not.toContain(secret)
+			}
 		})
 	})
 })

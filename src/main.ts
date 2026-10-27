@@ -15,10 +15,18 @@ import { WebSocket } from 'ws'
 import { CookieJar } from 'tough-cookie'
 import { wrapper } from 'axios-cookiejar-support'
 import { handleError, shouldRetryConnection } from './errors.js'
+import { deviceDataForLog, redactHeaders } from './logging.js'
 import PQueue from 'p-queue'
 import url from 'node:url'
 
 const PING_INTERVAL = 30000 // milliseconds
+
+/** Post data for the log. A form is the login, so only its field names are shown, never the values */
+function describePostData(data: MsgData | undefined): string {
+	if (data === undefined) return 'no post data'
+	if (data instanceof URLSearchParams) return `form fields ${[...data.keys()].join(', ')}`
+	return `post data ${typeof data == 'object' ? JSON.stringify(data) : data}`
+}
 
 export type ModuleTypes = {
 	config: ModuleConfig
@@ -244,7 +252,7 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 				if (!this.#axiosClient) throw new Error('Axios Client not initialised')
 				return await this.#axiosClient.get(path, { signal }).then((response: AxiosResponse<any, any>) => {
 					this.debug(`Successful HTTPS Get from path: ${path}\nResponse data:`)
-					this.debug(response.data)
+					this.debug(deviceDataForLog(response.data))
 					return response
 				})
 			},
@@ -269,12 +277,10 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 							response.headers['CREST-XSRF-TOKEN'] &&
 							response.headers['CREST-XSRF-TOKEN'] !== this.#CREST_XSRF_TOKEN
 						) {
-							this.debug(`Updated XSRF Token: ${response.headers['CREST-XSRF-TOKEN']}`)
+							this.debug(`Updated XSRF Token`)
 							this.#CREST_XSRF_TOKEN = response.headers['CREST-XSRF-TOKEN']
 						}
-						this.debug(
-							`Successful HTTPS Post to path: ${path} with post data ${typeof data == 'object' ? JSON.stringify(data) : typeof data == 'undefined' ? '' : data?.toString()}\nResponse data:`,
-						)
+						this.debug(`Successful HTTPS Post to path: ${path} with ${describePostData(data)}\nResponse data:`)
 						this.debug(response.data)
 						return response
 					})
@@ -341,8 +347,13 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 	private async requestLoginPage(): Promise<void> {
 		this.#CREST_XSRF_TOKEN = ''
 		const trackIdRequest = await this.httpsGet(ApiCalls.login, 3)
-		this.debug(`Returned Headers: \n${JSON.stringify(trackIdRequest.headers)}`)
-		this.debug(`Cookies: ${JSON.stringify(this.#jar.getCookiesSync(`https://${this.#config.host}`))}`)
+		this.debug(`Returned Headers: \n${JSON.stringify(redactHeaders(trackIdRequest.headers))}`)
+		this.debug(
+			`Cookies: ${this.#jar
+				.getCookiesSync(`https://${this.#config.host}`)
+				.map((cookie) => cookie.key)
+				.join(', ')}`,
+		)
 	}
 
 	private async submitCredentials(): Promise<void> {
@@ -361,7 +372,7 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 			3,
 		)
 		this.debug(
-			`Login request: ${JSON.stringify(loginRequest.statusText)}\n Returned Headers: \n${JSON.stringify(loginRequest.headers)}`,
+			`Login request: ${JSON.stringify(loginRequest.statusText)}\n Returned Headers: \n${JSON.stringify(redactHeaders(loginRequest.headers))}`,
 		)
 	}
 
