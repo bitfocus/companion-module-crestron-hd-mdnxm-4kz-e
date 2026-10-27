@@ -1,6 +1,20 @@
-import { CompanionInputFieldDropdown, DropdownChoice } from '@companion-module/base'
+import type { CompanionInputFieldDropdown, DropdownChoice } from '@companion-module/base'
 
-export const destinationOption = (choices: DropdownChoice[]): CompanionInputFieldDropdown => {
+export const AutoRouteState = ['on', 'off', 'toggle'] as const
+export type AutoRouteState = (typeof AutoRouteState)[number]
+
+const AUTO_ROUTE_CHOICES = [
+	{ id: 'on', label: 'Enabled' },
+	{ id: 'off', label: 'Disabled' },
+	{ id: 'toggle', label: 'Toggle' },
+] as const satisfies DropdownChoice<AutoRouteState>[]
+
+// Source and destination choices are the device's own input and output keys, so they only exist at runtime.
+// The default is the first one the device reports, or an empty string if it reports none.
+
+export const destinationOption = (
+	choices: DropdownChoice<string>[],
+): CompanionInputFieldDropdown<'destination', string> => {
 	return {
 		id: 'destination',
 		type: 'dropdown',
@@ -10,7 +24,7 @@ export const destinationOption = (choices: DropdownChoice[]): CompanionInputFiel
 	}
 }
 
-export const sourceOption = (choices: DropdownChoice[]): CompanionInputFieldDropdown => {
+export const sourceOption = (choices: DropdownChoice<string>[]): CompanionInputFieldDropdown<'source', string> => {
 	return {
 		id: 'source',
 		type: 'dropdown',
@@ -20,16 +34,12 @@ export const sourceOption = (choices: DropdownChoice[]): CompanionInputFieldDrop
 	}
 }
 
-export const autoRouteOption = (): CompanionInputFieldDropdown => {
+export const autoRouteOption = (): CompanionInputFieldDropdown<'enable', AutoRouteState> => {
 	return {
 		id: 'enable',
 		type: 'dropdown',
 		label: 'Enable',
-		choices: [
-			{ id: 'on', label: 'Enabled' },
-			{ id: 'off', label: 'Disabled' },
-			{ id: 'toggle', label: 'Toggle' },
-		],
-		default: 'toggle',
+		choices: AUTO_ROUTE_CHOICES,
+		default: AUTO_ROUTE_CHOICES[2].id,
 	}
 }

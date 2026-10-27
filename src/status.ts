@@ -1,5 +1,5 @@
 import { InstanceBase, InstanceStatus } from '@companion-module/base'
-import type { ModuleConfig, ModuleSecrets } from './config.js'
+import type { ModuleTypes } from './main.js'
 import { throttle } from 'es-toolkit'
 
 export interface Status {
@@ -19,14 +19,14 @@ export interface Status {
 export class StatusManager {
 	#currentStatus: Status = { status: InstanceStatus.Disconnected, message: '' }
 	#newStatus: Status = { status: InstanceStatus.Disconnected, message: '' }
-	#parentInstance!: InstanceBase<ModuleConfig, ModuleSecrets>
+	#parentInstance!: InstanceBase<ModuleTypes>
 	private debounceTimer: NodeJS.Timeout | undefined
 	#throttleTimeout: number = 1000
 	#isDestroyed: boolean = false
 	private setNewStatus!: ((newStatus?: Status) => void) & { flush: () => void }
 
 	constructor(
-		self: InstanceBase<ModuleConfig, ModuleSecrets>,
+		self: InstanceBase<ModuleTypes>,
 		initStatus: Status = { status: InstanceStatus.Disconnected, message: null },
 		throttleTimeout: number = 2000,
 	) {

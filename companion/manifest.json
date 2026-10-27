@@ -1,6 +1,8 @@
 {
+	"$schema": "../node_modules/@companion-module/base/assets/manifest.schema.json",
+	"type": "connection",
 	"id": "crestron-hd-mdnxm-4kz-e",
-	"name": "crestron-hd-mdnxm-4kz-e",
+	"name": "hd-mdnxm-4kz-e",
 	"shortname": "HD-MDNXM-4KZ-E",
 	"description": "Crestron HD-MDNXM-4KZ-E Switcher Module",
 	"version": "0.0.0",
@@ -14,7 +16,7 @@
 		}
 	],
 	"runtime": {
-		"type": "node22",
+		"type": "node26",
 		"api": "nodejs-ipc",
 		"apiVersion": "0.0.0",
 		"entrypoint": "../dist/main.js"

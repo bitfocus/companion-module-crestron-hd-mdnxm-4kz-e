@@ -1,9 +1,9 @@
-import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
+import { InstanceBase, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig, type ModuleSecrets } from './config.js'
-import { UpdateVariableDefinitions } from './variables.js'
+import { UpdateVariableDefinitions, type VariablesSchema } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
-import { UpdateActions } from './actions.js'
-import { UpdateFeedbacks } from './feedbacks.js'
+import { UpdateActions, type ActionSchema } from './actions.js'
+import { UpdateFeedbacks, type FeedbackSchema } from './feedbacks.js'
 import { StatusManager } from './status.js'
 import { ApiCalls, type ApiCallValues, wsApiGetCalls } from './api.js'
 import type { MsgData } from './types.js'
@@ -20,7 +20,17 @@ import url from 'node:url'
 
 const PING_INTERVAL = 30000 // milliseconds
 
-export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
+export type ModuleTypes = {
+	config: ModuleConfig
+	secrets: ModuleSecrets
+	actions: ActionSchema
+	feedbacks: FeedbackSchema
+	variables: VariablesSchema
+}
+
+export { UpgradeScripts }
+
+export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 	public crestronDevice!: Crestron_HDMDNXM_4KZ
 	#config!: ModuleConfig // Setup in init()
 	#secrets!: ModuleSecrets
@@ -270,7 +280,15 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		)
 	}
 
-	public async wsSend(data: string, priority: number = 1): Promise<void> {
+	private combineSignal(signal?: AbortSignal): AbortSignal {
+		return signal ? AbortSignal.any([this.#controller.signal, signal]) : this.#controller.signal
+	}
+
+	/**
+	 * Queue a message for the WebSocket
+	 * @param signal Abort signal from the action context, so a message that is no longer wanted never reaches the wire
+	 */
+	public async wsSend(data: string, priority: number = 1, signal?: AbortSignal): Promise<void> {
 		return this.#queue.add(
 			async ({ signal }) => {
 				if (this.#socket && this.#socket.readyState === WebSocket.OPEN) {
@@ -311,7 +329,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 					throw new Error(`WebSocket not open. Could not send ${data}`)
 				}
 			},
-			{ priority: priority, signal: this.#controller.signal },
+			{ priority: priority, signal: this.combineSignal(signal) },
 		)
 	}
 
@@ -358,6 +376,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.updateActions() // export actions
 			this.updateFeedbacks() // export feedbacks
 			this.updateVariableDefinitions() // export variable definitions
+			// API 2.x has no feedback subscribe hook: feedbacks register for WebSocket updates from their callbacks,
+			// so run every callback against the new definitions and device data
+			this.checkAllFeedbacks()
 		},
 		5000,
 		{ edges: ['trailing'] },
@@ -380,5 +401,3 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		UpdateVariableDefinitions(this)
 	}
 }
-
-runEntrypoint(ModuleInstance, UpgradeScripts)

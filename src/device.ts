@@ -79,16 +79,16 @@ export class Crestron_HDMDNXM_4KZ {
 		return this.#HDMDNXM.Device.AvioV2.Inputs
 	}
 
-	get inputChoices(): DropdownChoice[] {
-		const choices: DropdownChoice[] = []
+	get inputChoices(): DropdownChoice<string>[] {
+		const choices: DropdownChoice<string>[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Inputs)) {
 			choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
 		}
 		return choices
 	}
 
-	get inputChoicesSupportingVideoRouting(): DropdownChoice[] {
-		const choices: DropdownChoice[] = []
+	get inputChoicesSupportingVideoRouting(): DropdownChoice<string>[] {
+		const choices: DropdownChoice<string>[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Inputs)) {
 			if (value.Capabilities.IsVideoRoutingSupported)
 				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
@@ -96,8 +96,8 @@ export class Crestron_HDMDNXM_4KZ {
 		return choices
 	}
 
-	get inputChoicesSupportingAudioRouting(): DropdownChoice[] {
-		const choices: DropdownChoice[] = []
+	get inputChoicesSupportingAudioRouting(): DropdownChoice<string>[] {
+		const choices: DropdownChoice<string>[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Inputs)) {
 			if (value.Capabilities.IsAudioRoutingSupported)
 				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
@@ -109,16 +109,16 @@ export class Crestron_HDMDNXM_4KZ {
 		return this.#HDMDNXM.Device.AvioV2.Outputs
 	}
 
-	get outputChoices(): DropdownChoice[] {
-		const choices: DropdownChoice[] = []
+	get outputChoices(): DropdownChoice<string>[] {
+		const choices: DropdownChoice<string>[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Outputs)) {
 			choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
 		}
 		return choices
 	}
 
-	get outputChoicesSupportingVideoRouting(): DropdownChoice[] {
-		const choices: DropdownChoice[] = []
+	get outputChoicesSupportingVideoRouting(): DropdownChoice<string>[] {
+		const choices: DropdownChoice<string>[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Outputs)) {
 			if (value.Capabilities.IsVideoRoutingSupported)
 				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })
@@ -126,8 +126,8 @@ export class Crestron_HDMDNXM_4KZ {
 		return choices
 	}
 
-	get outputChoicesSupportingAudioRouting(): DropdownChoice[] {
-		const choices: DropdownChoice[] = []
+	get outputChoicesSupportingAudioRouting(): DropdownChoice<string>[] {
+		const choices: DropdownChoice<string>[] = []
 		for (const [key, value] of Object.entries(this.#HDMDNXM.Device.AvioV2.Outputs)) {
 			if (value.Capabilities.IsAudioRoutingSupported)
 				choices.push({ id: key, label: `${key}: ${value.UserSpecifiedName}` })

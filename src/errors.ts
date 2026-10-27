@@ -1,5 +1,5 @@
 import { InstanceStatus } from '@companion-module/base'
-import { ModuleInstance } from './main.js'
+import type ModuleInstance from './main.js'
 
 import axios, { AxiosError } from 'axios'
 import { ZodError } from 'zod'

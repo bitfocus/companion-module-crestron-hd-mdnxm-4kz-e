@@ -1,13 +1,14 @@
 import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 
-export interface ModuleConfig {
+// Type aliases, not interfaces: InstanceTypes requires config and secrets to satisfy JsonObject, and interfaces don't
+export type ModuleConfig = {
 	host: string
 	user: string
 	selfSigned: boolean
 	verbose: boolean
 }
 
-export interface ModuleSecrets {
+export type ModuleSecrets = {
 	passwd: string
 }
 
@@ -19,7 +20,6 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Host IP',
 			width: 8,
 			regex: Regex.IP,
-			required: true,
 		},
 		{
 			type: 'textinput',
@@ -27,7 +27,6 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Username',
 			width: 8,
 			regex: Regex.SOMETHING,
-			required: true,
 		},
 		{
 			type: 'secret-text',
@@ -35,7 +34,6 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Password',
 			width: 8,
 			regex: Regex.SOMETHING,
-			required: true,
 		},
 		{
 			type: 'checkbox',
