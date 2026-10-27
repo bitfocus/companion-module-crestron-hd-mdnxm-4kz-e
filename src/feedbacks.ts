@@ -92,8 +92,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				const dest = feedback.options.destination
 				const config = self.crestronDevice.AvRoutingMatrixV2.Config
 				if (config) {
-					const destConfig = config[dest]
-					if ('VideoSourceConfigured' in destConfig && destConfig.VideoSourceConfigured == 'No Source')
+					const destConfig: (typeof config)[string] | undefined = config[dest]
+					if (destConfig && 'VideoSourceConfigured' in destConfig && destConfig.VideoSourceConfigured == 'No Source')
 						return feedback.options.name ? 'No Source' : 0
 				}
 				let source: string = ''
@@ -164,8 +164,9 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				const routes = self.crestronDevice.routes
 				const config = self.crestronDevice.AvRoutingMatrixV2.Config
 				if (config) {
-					const destConfig = config[dest]
-					if ('VideoSourceConfigured' in destConfig && destConfig.VideoSourceConfigured == 'No Source') return false
+					const destConfig: (typeof config)[string] | undefined = config[dest]
+					if (destConfig && 'VideoSourceConfigured' in destConfig && destConfig.VideoSourceConfigured == 'No Source')
+						return false
 				}
 				if (dest && dest in routes) {
 					const route = routes[dest]
@@ -245,8 +246,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				const routes = self.crestronDevice.routes
 				const config = self.crestronDevice.AvRoutingMatrixV2.Config
 				if (config) {
-					const destConfig = config[dest]
-					if ('AudioSourceConfigured' in destConfig && destConfig.AudioSourceConfigured == 'No Source')
+					const destConfig: (typeof config)[string] | undefined = config[dest]
+					if (destConfig && 'AudioSourceConfigured' in destConfig && destConfig.AudioSourceConfigured == 'No Source')
 						return feedback.options.name ? 'No Source' : 0
 				}
 				if (dest && dest in routes) {
@@ -278,8 +279,9 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				const routes = self.crestronDevice.routes
 				const config = self.crestronDevice.AvRoutingMatrixV2.Config
 				if (config) {
-					const destConfig = config[dest]
-					if ('AudioSourceConfigured' in destConfig && destConfig.AudioSourceConfigured == 'No Source') return false
+					const destConfig: (typeof config)[string] | undefined = config[dest]
+					if (destConfig && 'AudioSourceConfigured' in destConfig && destConfig.AudioSourceConfigured == 'No Source')
+						return false
 				}
 				if (dest && dest in routes) {
 					const route = routes[dest]

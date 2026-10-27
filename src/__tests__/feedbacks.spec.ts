@@ -11,7 +11,7 @@ import { FeedbackId, UpdateFeedbacks, type FeedbackSchema } from '../feedbacks.j
 import type ModuleInstance from '../main.js'
 import type { InnerDevice } from '../schemas/Device.js'
 
-function setup() {
+function setup(Config?: Record<string, Record<string, string>>) {
 	const crestronDevice = {
 		inputChoices: [
 			{ id: 'Input1', label: 'Input1: Camera' },
@@ -22,7 +22,7 @@ function setup() {
 		outputChoicesSupportingVideoRouting: [{ id: 'Output1', label: 'Output1: Screen' }],
 		routes: { Output1: { AudioSource: 'Input2', VideoSource: 'Input1' } },
 		autoRoute: true,
-		AvRoutingMatrixV2: { Config: undefined },
+		AvRoutingMatrixV2: { Config },
 		AvioV2: {
 			Inputs: {
 				Input1: { UserSpecifiedName: 'Camera', InputInfo: { Ports: { Port1: { IsSyncDetected: true } } } },
@@ -109,6 +109,32 @@ describe('feedback callbacks', () => {
 		[FeedbackId.AutomaticRouting, {}, true],
 	] as const)('%s with %o returns %s', (id, options, expected) => {
 		const { defs } = setup()
+		expect(definition(defs, id).callback(info(id, 'fb-1', options), callbackContext)).toBe(expected)
+	})
+})
+
+describe('feedback callbacks with a routing Config', () => {
+	// The device API documents a Config of each destination's configured source, though current firmware omits it
+
+	it.each([
+		[FeedbackId.VideoSource, { destination: 'Output1', name: true }, 'Camera'],
+		[FeedbackId.VideoSourceTally, { source: 'Input1', destination: 'Output1' }, true],
+		[FeedbackId.AudioSource, { destination: 'Output1', name: true }, 'Laptop'],
+		[FeedbackId.AudioSourceTally, { source: 'Input2', destination: 'Output1' }, true],
+	] as const)('%s falls back to the route when Config has no entry for the destination', (id, options, expected) => {
+		const { defs } = setup({ Output2: { VideoSourceConfigured: 'No Source', AudioSourceConfigured: 'No Source' } })
+		expect(definition(defs, id).callback(info(id, 'fb-1', options), callbackContext)).toBe(expected)
+	})
+
+	it.each([
+		[FeedbackId.VideoSource, { destination: 'Output1', name: true }, 'No Source'],
+		[FeedbackId.VideoSource, { destination: 'Output1', name: false }, 0],
+		[FeedbackId.VideoSourceTally, { source: 'Input1', destination: 'Output1' }, false],
+		[FeedbackId.AudioSource, { destination: 'Output1', name: true }, 'No Source'],
+		[FeedbackId.AudioSource, { destination: 'Output1', name: false }, 0],
+		[FeedbackId.AudioSourceTally, { source: 'Input2', destination: 'Output1' }, false],
+	] as const)('%s with %o reports %s when Config has the destination on No Source', (id, options, expected) => {
+		const { defs } = setup({ Output1: { VideoSourceConfigured: 'No Source', AudioSourceConfigured: 'No Source' } })
 		expect(definition(defs, id).callback(info(id, 'fb-1', options), callbackContext)).toBe(expected)
 	})
 })
