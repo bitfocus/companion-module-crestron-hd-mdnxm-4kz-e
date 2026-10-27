@@ -345,6 +345,25 @@ describe('Crestron_HDMDNXM_4KZ', () => {
 			expect(changed).toContain('AvioV2')
 		})
 
+		// The partial schema runs RoutePriorities' transform. Compiling a @traversable/zod deep partial made that
+		// throw a TypeError on every message carrying it, including the full matrix requested when the socket opens
+		it('parses the full routing matrix sent when the socket opens', () => {
+			const { AvMatrixRoutingV2 } = makeDeviceData({ isAutomaticRoutingEnabled: true }).Device
+			const changed = device.partialUpdateDeviceFromWebSocketMessage(makeWsMessage({ Device: { AvMatrixRoutingV2 } }))
+			expect(changed).toEqual(['AvMatrixRoutingV2'])
+			expect(device.autoRoute).toBe(true)
+		})
+
+		it('merges route priorities sent with the HD-MDNXM spelling as PriorityList', () => {
+			const changed = device.partialUpdateDeviceFromWebSocketMessage(
+				makeWsMessage({
+					Device: { AvMatrixRoutingV2: { RoutePriorities: { Output1: { PrioirtyList: { Input1: 2 } } } } },
+				}),
+			)
+			expect(changed).toEqual(['AvMatrixRoutingV2'])
+			expect(device.AvRoutingMatrixV2.RoutePriorities['Output1']).toEqual({ PriorityList: { Input1: 2, Input2: 1 } })
+		})
+
 		it('throws (or returns gracefully) on malformed WebSocket data', () => {
 			const badMsg = { data: '{not valid json}', type: 'message', target: {} } as WebSocket.MessageEvent
 			expect(() => device.partialUpdateDeviceFromWebSocketMessage(badMsg)).toThrow()

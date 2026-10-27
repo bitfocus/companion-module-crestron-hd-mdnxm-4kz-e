@@ -1,19 +1,21 @@
 import * as z from 'zod'
-import { zx } from '@traversable/zod'
 
 import { AvioV2 } from './AvioV2.js'
 import { AvMatrixRoutingV2 } from './AvMatrixRoutingV2.js'
 
-export const Device = z.object({
-	Device: z.object({
-		AvioV2: AvioV2,
-		AvMatrixRoutingV2: AvMatrixRoutingV2,
+export const Device = z.compile(
+	z.object({
+		Device: z.object({
+			AvioV2: AvioV2,
+			AvMatrixRoutingV2: AvMatrixRoutingV2,
+		}),
 	}),
-})
+)
 
 export type Device = z.infer<typeof Device>
 
-export const PartialDevice = zx.deepPartial(Device)
+// Parsed against every WebSocket message, so derived and compiled once here rather than at the parse site
+export const PartialDevice = z.compile(z.deepPartial(Device))
 
 export type PartialDevice = z.output<typeof PartialDevice>
 
