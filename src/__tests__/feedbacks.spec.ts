@@ -10,6 +10,8 @@ import { Crestron_HDMDNXM_4KZ } from '../device.js'
 import { FeedbackId, UpdateFeedbacks, type FeedbackSchema } from '../feedbacks.js'
 import type ModuleInstance from '../main.js'
 import type { InnerDevice } from '../schemas/Device.js'
+import { loadHdMd8x8Capture } from './fixtures.js'
+import type { AxiosResponse } from 'axios'
 
 function setup(Config?: Record<string, Record<string, string>>) {
 	const crestronDevice = {
@@ -135,6 +137,31 @@ describe('feedback callbacks with a routing Config', () => {
 		[FeedbackId.AudioSourceTally, { source: 'Input2', destination: 'Output1' }, false],
 	] as const)('%s with %o reports %s when Config has the destination on No Source', (id, options, expected) => {
 		const { defs } = setup({ Output1: { VideoSourceConfigured: 'No Source', AudioSourceConfigured: 'No Source' } })
+		expect(definition(defs, id).callback(info(id, 'fb-1', options), callbackContext)).toBe(expected)
+	})
+})
+
+describe('feedback callbacks on an HD-MD8X8-4KZ-E capture', () => {
+	// The unit sends Config for only some destinations: Output3-6 have routes but no Config entry
+	function setupCapture() {
+		const crestronDevice = Crestron_HDMDNXM_4KZ.createNewDevice({ data: loadHdMd8x8Capture() } as AxiosResponse)
+		const setFeedbackDefinitions = vi.fn<(defs: CompanionFeedbackDefinitions<FeedbackSchema>) => void>()
+		const self = {
+			crestronDevice,
+			feedbackSubscriptions: Crestron_HDMDNXM_4KZ.feedbackSubscriptionTracker(),
+			setFeedbackDefinitions,
+		} as unknown as ModuleInstance
+		UpdateFeedbacks(self)
+		return setFeedbackDefinitions.mock.calls[0][0]
+	}
+
+	it.each([
+		[FeedbackId.VideoSource, { destination: 'Output3', name: true }, 'HDMI 8'],
+		[FeedbackId.VideoSource, { destination: 'Output2', name: false }, 'Input8'],
+		[FeedbackId.VideoSourceTally, { source: 'Input1', destination: 'Output5' }, true],
+		[FeedbackId.AudioSource, { destination: 'Aux1', name: true }, 'No Source'],
+	] as const)('%s with %o returns %s', (id, options, expected) => {
+		const defs = setupCapture()
 		expect(definition(defs, id).callback(info(id, 'fb-1', options), callbackContext)).toBe(expected)
 	})
 })

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { Crestron_HDMDNXM_4KZ } from '../device.js'
 import type { AxiosResponse } from 'axios'
 import type { WebSocket } from 'ws'
-import { makeDeviceData, makeInput, makeInputPort, makeOutput, makeOutputPort } from './fixtures.js'
+import { loadHdMd8x8Capture, makeDeviceData, makeInput, makeInputPort, makeOutput, makeOutputPort } from './fixtures.js'
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
@@ -405,6 +405,56 @@ describe('Crestron_HDMDNXM_4KZ', () => {
 				}),
 			)
 			expect(device.routes['Output1']).toMatchObject({ VideoSource: 'Input2' })
+		})
+	})
+
+	// Its Aux1 and Aux2 are audio-only outputs, reported alongside Output1-8 in the same routing records. Config and
+	// Routes only allowed records of all Aux or all Output keys, so the unit could not be loaded at all
+	describe('HD-MD8X8-4KZ-E capture', () => {
+		let device: Crestron_HDMDNXM_4KZ
+
+		beforeEach(() => {
+			device = Crestron_HDMDNXM_4KZ.createNewDevice(makeAxiosResponse(loadHdMd8x8Capture()))
+		})
+
+		it('loads', () => {
+			expect(device.routes['Aux1']).toEqual({ AudioSource: 'Input2' })
+			expect(device.routes['Output2']).toEqual({ AudioSource: 'Input8', VideoSource: 'Input8' })
+			expect(device.AvRoutingMatrixV2.Config?.['Aux1']).toEqual({ AudioSourceConfigured: 'No Source' })
+			expect(device.AvRoutingMatrixV2.Config?.['Output2']).toEqual({ VideoSourceConfigured: 'Input8' })
+		})
+
+		it('offers the Aux outputs for audio routing only', () => {
+			const ids = (choices: { id: string }[]) => choices.map((c) => c.id)
+			expect(ids(device.outputChoicesSupportingAudioRouting)).toEqual(['Aux1', 'Aux2'])
+			expect(ids(device.outputChoicesSupportingVideoRouting)).not.toContain('Aux1')
+		})
+
+		// The partial schema is derived from the full one, so it had the same fault: a WebSocket message with both
+		// kinds of key was dropped whole
+		it('applies the full routing matrix sent when the socket opens', () => {
+			const { AvMatrixRoutingV2 } = loadHdMd8x8Capture().Device as { AvMatrixRoutingV2: Record<string, unknown> }
+			const changed = device.partialUpdateDeviceFromWebSocketMessage(
+				makeWsMessage({
+					Device: { AvMatrixRoutingV2: { ...AvMatrixRoutingV2, IsAutomaticRoutingEnabled: true } },
+				}),
+			)
+			expect(changed).toEqual(['AvMatrixRoutingV2'])
+			expect(device.autoRoute).toBe(true)
+		})
+
+		it('applies a route update with both Aux and Output keys', () => {
+			device.partialUpdateDeviceFromWebSocketMessage(
+				makeWsMessage({
+					Device: {
+						AvMatrixRoutingV2: {
+							Routes: { Aux1: { AudioSource: 'Input3' }, Output1: { VideoSource: 'Input5' } },
+						},
+					},
+				}),
+			)
+			expect(device.routes['Aux1']).toEqual({ AudioSource: 'Input3' })
+			expect(device.routes['Output1']).toEqual({ AudioSource: 'Input2', VideoSource: 'Input5' })
 		})
 	})
 })

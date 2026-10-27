@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 /**
  * Builders for device data shaped like the HD-MDNXM-4KZ-E's /Device response. Shared by the specs, and kept out of
  * any *.spec.ts file so importing them doesn't also import, and rerun, that file's tests.
@@ -117,5 +119,22 @@ export function makeDeviceData(
 				SyncDetectedOrder: '0-0',
 			},
 		},
+	}
+}
+
+/**
+ * GET /Device from an HD-MD8X8-4KZ-E, firmware built Feb 10 2024 (530849), taken from a user's module log of
+ * 2026-10-27. Only AvioV2 and AvMatrixRoutingV2 are kept: nothing else is parsed, and the rest carried the unit's
+ * authentication and network settings.
+ *
+ * Aux1 and Aux2 are audio-only outputs, so its routing Config and Routes have Aux and Output keys in the same object.
+ * State at capture: automatic routing off, priority routing on, Aux1 and Aux2 taking audio from Input2, Output1 video
+ * from Input2, Output2-4 from Input8, Output5-7 from Input1 and Output8 from Input2, each with audio following.
+ * Config is present, but only for Aux1, Aux2, Output1,
+ * Output2, Output7 and Output8.
+ */
+export function loadHdMd8x8Capture(): { Device: Record<string, unknown> } {
+	return JSON.parse(readFileSync(new URL('./captures/hd-md8x8-4kz-e.json', import.meta.url), 'utf8')) as {
+		Device: Record<string, unknown>
 	}
 }

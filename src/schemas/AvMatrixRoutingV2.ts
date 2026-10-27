@@ -55,7 +55,14 @@ export const OutputConfigRecord = z.record(Output, OutputConfig)
 
 export type OutputConfigRecord = z.infer<typeof OutputConfigRecord>
 
-export const Config = z.union([AuxConfigRecord, OutputConfigRecord])
+// Units with Aux outputs, eg the HD-MD8X8-4KZ-E, report Aux and Output keys in the same object
+export const MixedConfigRecord = z.record(z.union([Output, Aux]), z.union([OutputConfig, AuxConfig]))
+
+export type MixedConfigRecord = z.infer<typeof MixedConfigRecord>
+
+// The mixed record goes last: a union takes the first option that matches, so anything the Aux-only or Output-only
+// record accepts parses exactly as it did before the mixed record was added
+export const Config = z.union([AuxConfigRecord, OutputConfigRecord, MixedConfigRecord])
 
 export type Config = z.infer<typeof Config>
 
@@ -67,7 +74,12 @@ export const OutputRouteRecord = z.record(Output, OutputRoutes)
 
 export type OutputRouteRecord = z.infer<typeof OutputRouteRecord>
 
-export const Routes = z.union([AuxRouteRecord, OutputRouteRecord])
+export const MixedRouteRecord = z.record(z.union([Output, Aux]), z.union([OutputRoutes, AuxRoutes]))
+
+export type MixedRouteRecord = z.infer<typeof MixedRouteRecord>
+
+// Last, for the same reason as Config
+export const Routes = z.union([AuxRouteRecord, OutputRouteRecord, MixedRouteRecord])
 
 export type Routes = z.infer<typeof Routes>
 

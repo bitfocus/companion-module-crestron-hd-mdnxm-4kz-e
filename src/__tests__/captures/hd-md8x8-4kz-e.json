@@ -1,0 +1,1084 @@
+{
+	"Device": {
+		"AvioV2": {
+			"GlobalConfig": {
+				"GlobalEdid": "Laptop 16x9 1080p60 2ch",
+				"GlobalEdidType": "system"
+			},
+			"Inputs": {
+				"Input1": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"InputInfo": {
+						"Id": "Port1",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio",
+										"SamplingFrequency": 0
+									}
+								},
+								"CurrentEdid": "Laptop 16x9 1080p60 2ch",
+								"CurrentEdidType": "system",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false,
+										"ReceiveCecMessage": ""
+									},
+									"ColorDepth": "8 - bit",
+									"ColorSpace": "UNKNOWN",
+									"HdcpReceiverCapability": "HDCP Support Off",
+									"HdcpState": "NotRequired",
+									"IsSourceHdcpActive": false,
+									"SourceContentStreamType": "Type 0 Content Stream",
+									"SourceHdcp": "No Signal",
+									"Status3D": "No 3D"
+								},
+								"EdidApplyError": "No err",
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSourceDetected": false,
+								"IsSyncDetected": false,
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.4"
+					},
+					"UserSpecifiedName": "HDMI 1"
+				},
+				"Input2": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"InputInfo": {
+						"Id": "Port2",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio",
+										"SamplingFrequency": 0
+									}
+								},
+								"CurrentEdid": "Laptop 16x9 1080p60 2ch",
+								"CurrentEdidType": "system",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false,
+										"ReceiveCecMessage": "4F 90"
+									},
+									"ColorDepth": "8 - bit",
+									"ColorSpace": "UNKNOWN",
+									"HdcpReceiverCapability": "HDCP Support Off",
+									"HdcpState": "NonHdcpSource",
+									"IsSourceHdcpActive": false,
+									"SourceContentStreamType": "Type 0 Content Stream",
+									"SourceHdcp": "No Signal",
+									"Status3D": "No 3D"
+								},
+								"EdidApplyError": "No err",
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSourceDetected": false,
+								"IsSyncDetected": false,
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.4"
+					},
+					"UserSpecifiedName": "HDMI 2"
+				},
+				"Input3": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"InputInfo": {
+						"Id": "Port3",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio",
+										"SamplingFrequency": 0
+									}
+								},
+								"CurrentEdid": "Laptop 16x9 1080p60 2ch",
+								"CurrentEdidType": "system",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false,
+										"ReceiveCecMessage": ""
+									},
+									"ColorDepth": "8 - bit",
+									"ColorSpace": "UNKNOWN",
+									"HdcpReceiverCapability": "Auto",
+									"HdcpState": "NotRequired",
+									"IsSourceHdcpActive": false,
+									"SourceContentStreamType": "Type 0 Content Stream",
+									"SourceHdcp": "No Signal",
+									"Status3D": "No 3D"
+								},
+								"EdidApplyError": "No err",
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSourceDetected": false,
+								"IsSyncDetected": false,
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.4"
+					},
+					"UserSpecifiedName": "HDMI 3"
+				},
+				"Input4": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"InputInfo": {
+						"Id": "Port4",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio",
+										"SamplingFrequency": 0
+									}
+								},
+								"CurrentEdid": "Laptop 16x9 1080p60 2ch",
+								"CurrentEdidType": "system",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false,
+										"ReceiveCecMessage": ""
+									},
+									"ColorDepth": "8 - bit",
+									"ColorSpace": "UNKNOWN",
+									"HdcpReceiverCapability": "Auto",
+									"HdcpState": "NotRequired",
+									"IsSourceHdcpActive": false,
+									"SourceContentStreamType": "Type 0 Content Stream",
+									"SourceHdcp": "No Signal",
+									"Status3D": "No 3D"
+								},
+								"EdidApplyError": "No err",
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSourceDetected": false,
+								"IsSyncDetected": false,
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.4"
+					},
+					"UserSpecifiedName": "HDMI 4"
+				},
+				"Input5": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"InputInfo": {
+						"Id": "Port5",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio",
+										"SamplingFrequency": 0
+									}
+								},
+								"CurrentEdid": "Laptop 16x9 1080p60 2ch",
+								"CurrentEdidType": "system",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false,
+										"ReceiveCecMessage": ""
+									},
+									"ColorDepth": "8 - bit",
+									"ColorSpace": "UNKNOWN",
+									"HdcpReceiverCapability": "Auto",
+									"HdcpState": "NotRequired",
+									"IsSourceHdcpActive": false,
+									"SourceContentStreamType": "Type 0 Content Stream",
+									"SourceHdcp": "No Signal",
+									"Status3D": "No 3D"
+								},
+								"EdidApplyError": "No err",
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSourceDetected": false,
+								"IsSyncDetected": false,
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.4"
+					},
+					"UserSpecifiedName": "HDMI 5"
+				},
+				"Input6": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"InputInfo": {
+						"Id": "Port6",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio",
+										"SamplingFrequency": 0
+									}
+								},
+								"CurrentEdid": "Laptop 16x9 1080p60 2ch",
+								"CurrentEdidType": "system",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false
+									},
+									"ColorDepth": "8 - bit",
+									"ColorSpace": "UNKNOWN",
+									"HdcpReceiverCapability": "Auto",
+									"HdcpState": "NotRequired",
+									"IsSourceHdcpActive": false,
+									"SourceContentStreamType": "Type 0 Content Stream",
+									"SourceHdcp": "No Signal",
+									"Status3D": "No 3D"
+								},
+								"EdidApplyError": "No err",
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSourceDetected": false,
+								"IsSyncDetected": false,
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.4"
+					},
+					"UserSpecifiedName": "HDMI 6"
+				},
+				"Input7": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"InputInfo": {
+						"Id": "Port7",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio",
+										"SamplingFrequency": 0
+									}
+								},
+								"CurrentEdid": "Laptop 16x9 1080p60 2ch",
+								"CurrentEdidType": "system",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false
+									},
+									"ColorDepth": "8 - bit",
+									"ColorSpace": "UNKNOWN",
+									"HdcpReceiverCapability": "Auto",
+									"HdcpState": "NotRequired",
+									"IsSourceHdcpActive": false,
+									"SourceContentStreamType": "Type 0 Content Stream",
+									"SourceHdcp": "No Signal",
+									"Status3D": "No 3D"
+								},
+								"EdidApplyError": "No err",
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSourceDetected": false,
+								"IsSyncDetected": false,
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.4"
+					},
+					"UserSpecifiedName": "HDMI 7"
+				},
+				"Input8": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"InputInfo": {
+						"Id": "Port8",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "16 : 9",
+								"Audio": {
+									"Digital": {
+										"Channels": 2,
+										"Format": "PCM",
+										"SamplingFrequency": 480
+									}
+								},
+								"CurrentEdid": "Laptop 16x9 1080p60 2ch",
+								"CurrentEdidType": "system",
+								"CurrentResolution": "1920x1080@60",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false
+									},
+									"ColorDepth": "8 - bit",
+									"ColorSpace": "RGB",
+									"HdcpReceiverCapability": "Auto",
+									"HdcpState": "NotRequired",
+									"IsSourceHdcpActive": false,
+									"SourceContentStreamType": "Type 0 Content Stream",
+									"SourceHdcp": "Non-HDCP",
+									"Status3D": "No 3D"
+								},
+								"EdidApplyError": "No err",
+								"FramesPerSecond": 60,
+								"HorizontalResolution": 1920,
+								"IsInterlacedDetected": false,
+								"IsSourceDetected": true,
+								"IsSyncDetected": true,
+								"PortType": "Hdmi",
+								"VerticalResolution": 1080
+							}
+						},
+						"Version": "3.0.4"
+					},
+					"UserSpecifiedName": "HDMI 8"
+				}
+			},
+			"Outputs": {
+				"Aux1": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": false
+					},
+					"Id": "Aux1",
+					"OutputInfo": {
+						"Ports": {
+							"Port1": {
+								"Audio": {
+									"Mute": false,
+									"Stereo": true,
+									"Volume": 0
+								},
+								"AudioFollowVideoSelected": "Output1",
+								"CurrentResolution": "N/A",
+								"Digital": {
+									"HdcpSinkCapability": "N/A",
+									"HdcpTransmitterMode": "N/A"
+								},
+								"IsAudioFollowVideoEnabled": true,
+								"PortType": "Audio"
+							}
+						}
+					},
+					"UserSpecifiedName": "AUX 1"
+				},
+				"Aux2": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": true,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": false
+					},
+					"Id": "Aux2",
+					"OutputInfo": {
+						"Ports": {
+							"Port1": {
+								"Audio": {
+									"Mute": false,
+									"Stereo": true,
+									"Volume": 0
+								},
+								"AudioFollowVideoSelected": "Output1",
+								"CurrentResolution": "N/A",
+								"Digital": {
+									"HdcpSinkCapability": "N/A",
+									"HdcpTransmitterMode": "N/A"
+								},
+								"IsAudioFollowVideoEnabled": true,
+								"PortType": "Audio"
+							}
+						}
+					},
+					"UserSpecifiedName": "AUX 2"
+				},
+				"Output1": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": false,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"Id": "Output1",
+					"OutputInfo": {
+						"Id": "Port1",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio"
+									},
+									"Mute": false
+								},
+								"ColorDepth": "8 - bit",
+								"ColorSpace": "UNKNOWN",
+								"ColorSpaceMode": "Auto",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false,
+										"ReceiveCecMessage": "0F 87"
+									},
+									"DownstreamEdid": {
+										"Manufacturer": "CEI",
+										"Name": "Crestron 420",
+										"PrefTiming": "3840x2160 @ 30Hz",
+										"SerialNumber": "0"
+									},
+									"HdcpSinkCapability": "HDCP 2.x",
+									"HdcpState": "NotRequired",
+									"HdcpTransmitterMode": "Follow Input",
+									"IsBlankingEnabled": false,
+									"IsOutputDisabled": false,
+									"IsTransmitting": false,
+									"Status3D": "No 3D"
+								},
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSinkConnected": true,
+								"IsSourceDetected": false,
+								"MaxColorDepth": "12 - bit",
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.6"
+					},
+					"UserSpecifiedName": "HDMI 1"
+				},
+				"Output2": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": false,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"Id": "Output2",
+					"OutputInfo": {
+						"Id": "Port2",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "16 : 9",
+								"Audio": {
+									"Digital": {
+										"Channels": 2,
+										"Format": "PCM"
+									},
+									"Mute": false
+								},
+								"ColorDepth": "8 - bit",
+								"ColorSpace": "RGB",
+								"ColorSpaceMode": "Auto",
+								"CurrentResolution": "1920x1080@60",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false,
+										"ReceiveCecMessage": "04 8C"
+									},
+									"DownstreamEdid": {
+										"Manufacturer": "CEI",
+										"Name": "Crestron",
+										"PrefTiming": "1920x1080 @ 60Hz",
+										"SerialNumber": "0"
+									},
+									"HdcpSinkCapability": "HDCP 2.x",
+									"HdcpState": "NotRequired",
+									"HdcpTransmitterMode": "Follow Input",
+									"IsBlankingEnabled": false,
+									"IsOutputDisabled": false,
+									"IsTransmitting": true,
+									"Status3D": "No 3D"
+								},
+								"FramesPerSecond": 60,
+								"HorizontalResolution": 1920,
+								"IsInterlacedDetected": false,
+								"IsSinkConnected": true,
+								"IsSourceDetected": true,
+								"MaxColorDepth": "12 - bit",
+								"PortType": "Hdmi",
+								"VerticalResolution": 1080
+							}
+						},
+						"Version": "3.0.6"
+					},
+					"UserSpecifiedName": "HDMI 2"
+				},
+				"Output3": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": false,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"Id": "Output3",
+					"OutputInfo": {
+						"Id": "Port3",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio"
+									},
+									"Mute": false
+								},
+								"ColorDepth": "8 - bit",
+								"ColorSpace": "UNKNOWN",
+								"ColorSpaceMode": "Auto",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false,
+										"ReceiveCecMessage": "04 90"
+									},
+									"DownstreamEdid": {
+										"Manufacturer": "",
+										"Name": "",
+										"PrefTiming": "",
+										"SerialNumber": ""
+									},
+									"HdcpSinkCapability": "Not Connected",
+									"HdcpState": "NotRequired",
+									"HdcpTransmitterMode": "Follow Input",
+									"IsBlankingEnabled": false,
+									"IsOutputDisabled": false,
+									"IsTransmitting": false,
+									"Status3D": "No 3D"
+								},
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSinkConnected": false,
+								"IsSourceDetected": false,
+								"MaxColorDepth": "12 - bit",
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.6"
+					},
+					"UserSpecifiedName": "HDMI 3"
+				},
+				"Output4": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": false,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"Id": "Output4",
+					"OutputInfo": {
+						"Id": "Port4",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio"
+									},
+									"Mute": false
+								},
+								"ColorDepth": "8 - bit",
+								"ColorSpace": "UNKNOWN",
+								"ColorSpaceMode": "Auto",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": true,
+										"ReceiveCecMessage": "04 8C"
+									},
+									"DownstreamEdid": {
+										"Manufacturer": "",
+										"Name": "",
+										"PrefTiming": "",
+										"SerialNumber": ""
+									},
+									"HdcpSinkCapability": "Not Connected",
+									"HdcpState": "NotRequired",
+									"HdcpTransmitterMode": "Follow Input",
+									"IsBlankingEnabled": false,
+									"IsOutputDisabled": false,
+									"IsTransmitting": false,
+									"Status3D": "No 3D"
+								},
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSinkConnected": false,
+								"IsSourceDetected": false,
+								"MaxColorDepth": "12 - bit",
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.6"
+					},
+					"UserSpecifiedName": "HDMI 4"
+				},
+				"Output5": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": false,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"Id": "Output5",
+					"OutputInfo": {
+						"Id": "Port5",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio"
+									},
+									"Mute": false
+								},
+								"ColorDepth": "8 - bit",
+								"ColorSpace": "UNKNOWN",
+								"ColorSpaceMode": "Auto",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": true
+									},
+									"DownstreamEdid": {
+										"Manufacturer": "",
+										"Name": "",
+										"PrefTiming": "",
+										"SerialNumber": ""
+									},
+									"HdcpSinkCapability": "Not Connected",
+									"HdcpTransmitterMode": "Follow Input",
+									"IsBlankingEnabled": false,
+									"IsOutputDisabled": false,
+									"IsTransmitting": false,
+									"Status3D": "No 3D"
+								},
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSinkConnected": false,
+								"IsSourceDetected": false,
+								"MaxColorDepth": "12 - bit",
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.6"
+					},
+					"UserSpecifiedName": "HDMI 5"
+				},
+				"Output6": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": false,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"Id": "Output6",
+					"OutputInfo": {
+						"Id": "Port6",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio"
+									},
+									"Mute": false
+								},
+								"ColorDepth": "8 - bit",
+								"ColorSpace": "UNKNOWN",
+								"ColorSpaceMode": "Auto",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": true
+									},
+									"DownstreamEdid": {
+										"Manufacturer": "",
+										"Name": "",
+										"PrefTiming": "",
+										"SerialNumber": ""
+									},
+									"HdcpSinkCapability": "Not Connected",
+									"HdcpTransmitterMode": "Follow Input",
+									"IsBlankingEnabled": false,
+									"IsOutputDisabled": false,
+									"IsTransmitting": false,
+									"Status3D": "No 3D"
+								},
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSinkConnected": false,
+								"IsSourceDetected": false,
+								"MaxColorDepth": "12 - bit",
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.6"
+					},
+					"UserSpecifiedName": "HDMI 6"
+				},
+				"Output7": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": false,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"Id": "Output7",
+					"OutputInfo": {
+						"Id": "Port7",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio"
+									},
+									"Mute": false
+								},
+								"ColorDepth": "8 - bit",
+								"ColorSpace": "UNKNOWN",
+								"ColorSpaceMode": "Auto",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": true
+									},
+									"DownstreamEdid": {
+										"Manufacturer": "",
+										"Name": "",
+										"PrefTiming": "",
+										"SerialNumber": ""
+									},
+									"HdcpSinkCapability": "Not Connected",
+									"HdcpTransmitterMode": "Follow Input",
+									"IsBlankingEnabled": false,
+									"IsOutputDisabled": false,
+									"IsTransmitting": false,
+									"Status3D": "No 3D"
+								},
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSinkConnected": false,
+								"IsSourceDetected": false,
+								"MaxColorDepth": "12 - bit",
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.6"
+					},
+					"UserSpecifiedName": "HDMI 7"
+				},
+				"Output8": {
+					"Capabilities": {
+						"IsAudioRoutingSupported": false,
+						"IsStreamRoutingSupported": false,
+						"IsUsbRoutingSupported": false,
+						"IsVideoRoutingSupported": true
+					},
+					"Id": "Output8",
+					"OutputInfo": {
+						"Id": "Port8",
+						"Ports": {
+							"Port1": {
+								"AspectRatio": "No signal",
+								"Audio": {
+									"Digital": {
+										"Channels": 0,
+										"Format": "No Audio"
+									},
+									"Mute": false
+								},
+								"ColorDepth": "8 - bit",
+								"ColorSpace": "UNKNOWN",
+								"ColorSpaceMode": "Auto",
+								"CurrentResolution": "0x0@0",
+								"Digital": {
+									"Cec": {
+										"IsCecErrorDetected": false
+									},
+									"DisabledByHdcp": false,
+									"DownstreamEdid": {
+										"Manufacturer": "CEI",
+										"Name": "Crestron",
+										"PrefTiming": "1920x1080 @ 60Hz",
+										"SerialNumber": "0"
+									},
+									"HdcpSinkCapability": "Non-HDCP",
+									"HdcpState": "NotRequired",
+									"HdcpTransmitterMode": "Follow Input",
+									"IsBlankingEnabled": false,
+									"IsOutputDisabled": false,
+									"IsTransmitting": false,
+									"Status3D": "No 3D"
+								},
+								"FramesPerSecond": 0,
+								"HorizontalResolution": 0,
+								"IsInterlacedDetected": false,
+								"IsSinkConnected": true,
+								"IsSourceDetected": false,
+								"MaxColorDepth": "12 - bit",
+								"PortType": "Hdmi",
+								"VerticalResolution": 0
+							}
+						},
+						"Version": "3.0.6"
+					},
+					"UserSpecifiedName": "HDMI 8"
+				}
+			},
+			"Version": "3.0.3"
+		},
+		"AvMatrixRoutingV2": {
+			"Config": {
+				"Aux1": {
+					"AudioSourceConfigured": "No Source"
+				},
+				"Aux2": {
+					"AudioSourceConfigured": "No Source"
+				},
+				"Output1": {
+					"VideoSourceConfigured": "Input2"
+				},
+				"Output2": {
+					"VideoSourceConfigured": "Input8"
+				},
+				"Output7": {
+					"VideoSourceConfigured": "Input1"
+				},
+				"Output8": {
+					"VideoSourceConfigured": "Input2"
+				}
+			},
+			"IsAutomaticRoutingEnabled": false,
+			"IsPriorityRoutingEnabled": true,
+			"RoutePriorities": {
+				"Output1": {
+					"PrioirtyList": {
+						"Input1": 1,
+						"Input2": 1,
+						"Input3": 1,
+						"Input4": 1,
+						"Input5": 1,
+						"Input6": 1,
+						"Input7": 1,
+						"Input8": 1
+					}
+				},
+				"Output2": {
+					"PrioirtyList": {
+						"Input1": 1,
+						"Input2": 1,
+						"Input3": 1,
+						"Input4": 1,
+						"Input5": 1,
+						"Input6": 1,
+						"Input7": 1,
+						"Input8": 1
+					}
+				},
+				"Output3": {
+					"PrioirtyList": {
+						"Input1": 1,
+						"Input2": 1,
+						"Input3": 1,
+						"Input4": 1,
+						"Input5": 1,
+						"Input6": 1,
+						"Input7": 1,
+						"Input8": 1
+					}
+				},
+				"Output4": {
+					"PrioirtyList": {
+						"Input1": 1,
+						"Input2": 1,
+						"Input3": 1,
+						"Input4": 1,
+						"Input5": 1,
+						"Input6": 1,
+						"Input7": 1,
+						"Input8": 1
+					}
+				},
+				"Output5": {
+					"PrioirtyList": {
+						"Input1": 1,
+						"Input2": 1,
+						"Input3": 1,
+						"Input4": 1,
+						"Input5": 1,
+						"Input6": 1,
+						"Input7": 1,
+						"Input8": 1
+					}
+				},
+				"Output6": {
+					"PrioirtyList": {
+						"Input1": 1,
+						"Input2": 1,
+						"Input3": 1,
+						"Input4": 1,
+						"Input5": 1,
+						"Input6": 1,
+						"Input7": 1,
+						"Input8": 1
+					}
+				},
+				"Output7": {
+					"PrioirtyList": {
+						"Input1": 1,
+						"Input2": 1,
+						"Input3": 1,
+						"Input4": 1,
+						"Input5": 1,
+						"Input6": 1,
+						"Input7": 1,
+						"Input8": 1
+					}
+				},
+				"Output8": {
+					"PrioirtyList": {
+						"Input1": 1,
+						"Input2": 1,
+						"Input3": 1,
+						"Input4": 1,
+						"Input5": 1,
+						"Input6": 1,
+						"Input7": 1,
+						"Input8": 1
+					}
+				}
+			},
+			"Routes": {
+				"Aux1": {
+					"AudioSource": "Input2"
+				},
+				"Aux2": {
+					"AudioSource": "Input2"
+				},
+				"Output1": {
+					"AudioSource": "Input2",
+					"VideoSource": "Input2"
+				},
+				"Output2": {
+					"AudioSource": "Input8",
+					"VideoSource": "Input8"
+				},
+				"Output3": {
+					"AudioSource": "Input8",
+					"VideoSource": "Input8"
+				},
+				"Output4": {
+					"AudioSource": "Input8",
+					"VideoSource": "Input8"
+				},
+				"Output5": {
+					"AudioSource": "Input1",
+					"VideoSource": "Input1"
+				},
+				"Output6": {
+					"AudioSource": "Input1",
+					"VideoSource": "Input1"
+				},
+				"Output7": {
+					"AudioSource": "Input1",
+					"VideoSource": "Input1"
+				},
+				"Output8": {
+					"AudioSource": "Input2",
+					"VideoSource": "Input2"
+				}
+			},
+			"SyncDetectedOrder": "8-0-0-0-0-0-0-0",
+			"Version": "2.1.3"
+		}
+	}
+}
