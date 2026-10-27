@@ -1,6 +1,50 @@
 import { describe, expect, it } from 'vitest'
+import * as z from 'zod'
 import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { describeAxiosError, deviceDataForLog, redactHeaders } from '../logging.js'
+import { describeAxiosError, deviceDataForLog, formatZodIssues, redactHeaders } from '../logging.js'
+import { AuxRouteRecord, OutputRouteRecord, Routes } from '../schemas/AvMatrixRoutingV2.js'
+import { loadHdMd8x8Capture } from './fixtures.js'
+
+const AUX_PATTERN = 'Value must match Aux<number> with no spaces or extra characters'
+const OUTPUT_PATTERN = 'Value must match Output<number> with no spaces or extra characters'
+
+const captureRoutes = (): Record<string, unknown> =>
+	(loadHdMd8x8Capture().Device as { AvMatrixRoutingV2: { Routes: Record<string, unknown> } }).AvMatrixRoutingV2.Routes
+
+function issues(schema: z.ZodType, data: unknown): z.core.$ZodIssue[] {
+	const result = schema.safeParse(data, { reportInput: true })
+	if (result.success) throw new Error('expected the parse to fail')
+	return result.error.issues
+}
+
+describe('formatZodIssues', () => {
+	// The failure in the user's log of 2026-10-27, which was logged as "Routes: Invalid input" and nothing else
+	it('says why each option of a union was rejected, for the HD-MD8X8 routes the old schema refused', () => {
+		const oldRoutes = z.object({ Routes: z.union([AuxRouteRecord, OutputRouteRecord]) })
+		expect(formatZodIssues(issues(oldRoutes, { Routes: captureRoutes() }))).toEqual([
+			'Routes: matched none of 2 options',
+			`  option 1: keys Output1, Output2, Output3, Output4, Output5, Output6, Output7, Output8: ${AUX_PATTERN}`,
+			`  option 2: keys Aux1, Aux2: ${OUTPUT_PATTERN}`,
+		])
+	})
+
+	it('gives every pattern a key failed, where zod only says "Invalid input"', () => {
+		const lines = formatZodIssues(issues(z.object({ Routes }), { Routes: { ...captureRoutes(), Foo1: {} } }))
+		expect(lines[0]).toBe('Routes: matched none of 3 options')
+		expect(lines).toContain(`  option 3: key Foo1: ${OUTPUT_PATTERN} or ${AUX_PATTERN}`)
+	})
+
+	it('shows the value received when it is a primitive, cut short when long', () => {
+		const schema = z.object({ a: z.boolean(), b: z.number(), c: z.string() })
+		expect(formatZodIssues(issues(schema, { a: 'yes', b: { nested: true }, c: 'x'.repeat(100) }).slice(0, 2))).toEqual([
+			'a: Invalid input: expected boolean, received string (value "yes")',
+			'b: Invalid input: expected number, received object',
+		])
+		expect(formatZodIssues(issues(z.object({ c: z.number() }), { c: 'x'.repeat(100) }))[0]).toContain(
+			`(value "${'x'.repeat(59)}…)`,
+		)
+	})
+})
 
 describe('redactHeaders', () => {
 	// Shaped like the headers the device returns on login, with made-up values

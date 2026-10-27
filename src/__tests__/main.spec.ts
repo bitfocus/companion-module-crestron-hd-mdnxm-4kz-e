@@ -294,5 +294,18 @@ describe('connection', () => {
 				expect(logged).not.toContain(secret)
 			}
 		})
+
+		it('says a WebSocket message that fails the schema was ignored', async () => {
+			const log = vi.spyOn(instance, 'log')
+			await start()
+			device.sockets[0].open()
+			device.sockets[0].emit('message', {
+				data: JSON.stringify({ Device: { AvMatrixRoutingV2: { IsAutomaticRoutingEnabled: 'yes' } } }),
+			})
+			expect(log).toHaveBeenCalledWith(
+				'warn',
+				'Invalid data from device (WebSocket message, update ignored):\n  Device.AvMatrixRoutingV2.IsAutomaticRoutingEnabled: Invalid input: expected boolean, received string (value "yes")',
+			)
+		})
 	})
 })

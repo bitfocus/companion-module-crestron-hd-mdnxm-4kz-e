@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import axios, { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import * as z from 'zod'
 import { ZodError } from 'zod'
 import { handleError, shouldRetryConnection } from '../errors.js'
 import type ModuleInstance from '../main.js'
@@ -51,6 +52,31 @@ describe('handleError', () => {
 		const instance = { log, debug, statusManager: { updateStatus: vi.fn() } } as unknown as ModuleInstance
 		return { instance, log, debug }
 	}
+
+	function zodError(fields: number): ZodError {
+		const shape = Object.fromEntries(Array.from({ length: fields }, (_, i) => [`f${i}`, z.number()]))
+		const result = z.object(shape).safeParse({})
+		if (result.success) throw new Error('expected the parse to fail')
+		return result.error
+	}
+
+	it('names where invalid data came from and what was lost', () => {
+		const { instance, log } = fakeInstance()
+		handleError(zodError(1), instance, 'WebSocket message, update ignored')
+		expect(log).toHaveBeenCalledWith(
+			'warn',
+			'Invalid data from device (WebSocket message, update ignored):\n  f0: Invalid input: expected number, received undefined',
+		)
+	})
+
+	it('caps the warning, and gives every line to the debug log', () => {
+		const { instance, log, debug } = fakeInstance()
+		handleError(zodError(15), instance, 'device query')
+		const warning = log.mock.calls[0][1]
+		expect(warning.split('\n')).toHaveLength(1 + 10 + 1)
+		expect(warning).toContain('...and 5 more lines')
+		expect(debug.mock.calls[0][0]).toContain('f14: ')
+	})
 
 	it('does not put the request config, with the password and cookies, in the debug log', () => {
 		const { instance, debug } = fakeInstance()

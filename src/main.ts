@@ -119,7 +119,7 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 		} catch (err) {
 			// Superseded by a config update, which has started its own attempt, or the module was destroyed
 			if (controller.signal.aborted) return
-			handleError(err, this)
+			handleError(err, this, 'device query while connecting, connection not made')
 			// Axios errors set a status of their own. Anything else, eg data that fails the schema, left it at whatever
 			// the last request had set
 			if (!axios.isAxiosError(err)) this.statusManager.updateStatus(InstanceStatus.UnknownError, 'Connection failed')
@@ -228,7 +228,7 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 				}
 				this.throttledCheckFeedbacksById()
 			} catch (err) {
-				handleError(err, this)
+				handleError(err, this, 'WebSocket message, update ignored')
 			}
 		})
 		this.#socket.addEventListener('error', (error) => {

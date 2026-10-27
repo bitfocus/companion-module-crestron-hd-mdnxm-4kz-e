@@ -3,7 +3,10 @@ import type ModuleInstance from './main.js'
 
 import axios, { AxiosError } from 'axios'
 import { ZodError } from 'zod'
-import { describeAxiosError } from './logging.js'
+import { describeAxiosError, formatZodIssues } from './logging.js'
+
+/** Lines of a schema failure shown at warn level. The rest go to the debug log */
+const MAX_LOGGED_ISSUE_LINES = 10
 
 export const HttpStatusCodes = {
 	100: InstanceStatus.Ok,
@@ -83,11 +86,15 @@ export function shouldRetryConnection(err: unknown, credentialsSent: boolean): b
 	return axios.isAxiosError(err) && err.response === undefined
 }
 
-export function handleError(err: unknown, instance: ModuleInstance): void {
+/**
+ * @param context Where the data came from and what failing it cost, eg "WebSocket message, update ignored". Used for
+ * schema failures, which otherwise give no hint of which request they belong to
+ */
+export function handleError(err: unknown, instance: ModuleInstance, context?: string): void {
 	if (axios.isAxiosError(err)) {
 		handleAxiosError(err, instance)
 	} else if (err instanceof ZodError) {
-		handleZodError(err, instance)
+		handleZodError(err, instance, context)
 	} else {
 		handleUnknownError(err, instance)
 	}
@@ -210,13 +217,14 @@ function handleNetworkError(err: AxiosError, instance: ModuleInstance): void {
 	}
 }
 
-function handleZodError(err: ZodError, instance: ModuleInstance): void {
-	instance.debug(err)
+function handleZodError(err: ZodError, instance: ModuleInstance, context?: string): void {
+	const lines = formatZodIssues(err.issues)
+	const shown = lines.slice(0, MAX_LOGGED_ISSUE_LINES)
+	const more = lines.length - shown.length
+	const tail = more > 0 ? `\n  ...and ${more} more lines, logged in full when verbose logging is on` : ''
 
-	// Format Zod errors more readably
-	const formattedErrors = err.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('\n  ')
-
-	instance.log('warn', `Invalid data returned:\n  ${formattedErrors}`)
+	instance.log('warn', `Invalid data from device${context ? ` (${context})` : ''}:\n  ${shown.join('\n  ')}${tail}`)
+	if (more > 0) instance.debug(`All lines of the invalid data warning:\n  ${lines.join('\n  ')}`)
 }
 
 function handleUnknownError(err: unknown, instance: ModuleInstance): void {

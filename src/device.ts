@@ -14,7 +14,8 @@ export class Crestron_HDMDNXM_4KZ {
 	}
 
 	static createNewDevice(response: AxiosResponse): Crestron_HDMDNXM_4KZ {
-		const device = Device.parse(response.data)
+		// reportInput puts the offending value in each issue, for the log
+		const device = Device.parse(response.data, { reportInput: true })
 		return new Crestron_HDMDNXM_4KZ(device)
 	}
 
@@ -27,7 +28,7 @@ export class Crestron_HDMDNXM_4KZ {
 
 	public partialUpdateDeviceFromWebSocketMessage(partialDevice: WebSocket.MessageEvent): Array<keyof InnerDevice> {
 		// eslint-disable-next-line @typescript-eslint/no-base-to-string
-		const parsedPartialDevice = PartialDevice.parse(JSON.parse(partialDevice.data.toString()))
+		const parsedPartialDevice = PartialDevice.parse(JSON.parse(partialDevice.data.toString()), { reportInput: true })
 
 		// Collect top-level keys that have changes somewhere in their nested structure
 		const changedKeys = new Set<keyof InnerDevice>()
