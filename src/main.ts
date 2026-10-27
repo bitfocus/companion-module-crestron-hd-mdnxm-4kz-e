@@ -112,6 +112,9 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 			// Superseded by a config update, which has started its own attempt, or the module was destroyed
 			if (controller.signal.aborted) return
 			handleError(err, this)
+			// Axios errors set a status of their own. Anything else, eg data that fails the schema, left it at whatever
+			// the last request had set
+			if (!axios.isAxiosError(err)) this.statusManager.updateStatus(InstanceStatus.UnknownError, 'Connection failed')
 			if (shouldRetryConnection(err, credentialsSent)) this.throttledReconnect()
 		}
 	}
@@ -240,7 +243,6 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 			async ({ signal }) => {
 				if (!this.#axiosClient) throw new Error('Axios Client not initialised')
 				return await this.#axiosClient.get(path, { signal }).then((response: AxiosResponse<any, any>) => {
-					this.statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
 					this.debug(`Successful HTTPS Get from path: ${path}\nResponse data:`)
 					this.debug(response.data)
 					return response
@@ -270,7 +272,6 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 							this.debug(`Updated XSRF Token: ${response.headers['CREST-XSRF-TOKEN']}`)
 							this.#CREST_XSRF_TOKEN = response.headers['CREST-XSRF-TOKEN']
 						}
-						this.statusManager.updateStatus(InstanceStatus.Ok, response.statusText)
 						this.debug(
 							`Successful HTTPS Post to path: ${path} with post data ${typeof data == 'object' ? JSON.stringify(data) : typeof data == 'undefined' ? '' : data?.toString()}\nResponse data:`,
 						)

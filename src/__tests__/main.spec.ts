@@ -257,4 +257,21 @@ describe('connection', () => {
 		expect(attempts()).toBe(2)
 		expect(device.sockets).toHaveLength(1)
 	})
+
+	describe('status', () => {
+		// Each successful request used to set OK, so a failed attempt could show OK while not connected
+		it('shows OK only once the WebSocket opens', async () => {
+			await start()
+			expect(updateStatus).not.toHaveBeenCalledWith(InstanceStatus.Ok, expect.anything())
+
+			device.sockets[0].open()
+			expect(updateStatus).toHaveBeenLastCalledWith(InstanceStatus.Ok, 'WebSocket connected')
+		})
+
+		it('shows an error when the device data fails the schema', async () => {
+			reply('GET', ApiCalls.Device, async () => ok({ Device: {} }))
+			await start()
+			expect(updateStatus).toHaveBeenLastCalledWith(InstanceStatus.UnknownError, 'Connection failed')
+		})
+	})
 })
