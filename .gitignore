@@ -8,3 +8,4 @@ DEBUG-*
 /.vscode
 /coverage
 .DS_Store
+*.csv
