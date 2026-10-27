@@ -14,7 +14,7 @@ import { throttle } from 'es-toolkit'
 import { WebSocket } from 'ws'
 import { CookieJar } from 'tough-cookie'
 import { wrapper } from 'axios-cookiejar-support'
-import { handleError } from './errors.js'
+import { handleError, shouldRetryConnection } from './errors.js'
 import PQueue from 'p-queue'
 import url from 'node:url'
 
@@ -92,20 +92,27 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 	}
 
 	private async setupConnection(config: ModuleConfig): Promise<void> {
+		if (!config.host) {
+			this.statusManager.updateStatus(InstanceStatus.BadConfig, 'No host')
+			return
+		}
+		const controller = this.#controller
+		let credentialsSent = false
 		try {
 			await this.createClient(config.host)
-			await this.login()
+			await this.requestLoginPage()
+			credentialsSent = true
+			await this.submitCredentials()
 			this.log('info', `Logged in to ${config.host}`)
 			const deviceQuery = await this.httpsGet(ApiCalls.Device)
 			this.crestronDevice = Crestron_HDMDNXM_4KZ.createNewDevice(deviceQuery)
 			this.createWebSocketConnection(config.host)
 			this.throttledUpdateActionFeedbackDefs()
 		} catch (err) {
+			// Superseded by a config update, which has started its own attempt, or the module was destroyed
+			if (controller.signal.aborted) return
 			handleError(err, this)
-			if (axios.isAxiosError(err)) {
-				// Only attempt a reconnect if could not reach unit
-				if (err.response === undefined) this.throttledReconnect()
-			}
+			if (shouldRetryConnection(err, credentialsSent)) this.throttledReconnect()
 		}
 	}
 
@@ -118,11 +125,7 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 		{ edges: ['trailing'] },
 	)
 
-	private async createClient(host = this.#config.host): Promise<void> {
-		if (!host) {
-			this.statusManager.updateStatus(InstanceStatus.BadConfig, 'No host')
-			return
-		}
+	private async createClient(host: string): Promise<void> {
 		await this.#jar.removeAllCookies()
 		this.#axiosClient = wrapper(axios.create({ baseURL: `https://${host}`, jar: this.#jar }))
 	}
@@ -333,12 +336,15 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 		)
 	}
 
-	private async login(): Promise<boolean> {
+	/** Fetches the login page, which sets the session tracking cookie. No credentials are sent */
+	private async requestLoginPage(): Promise<void> {
 		this.#CREST_XSRF_TOKEN = ''
 		const trackIdRequest = await this.httpsGet(ApiCalls.login, 3)
 		this.debug(`Returned Headers: \n${JSON.stringify(trackIdRequest.headers)}`)
 		this.debug(`Cookies: ${JSON.stringify(this.#jar.getCookiesSync(`https://${this.#config.host}`))}`)
+	}
 
+	private async submitCredentials(): Promise<void> {
 		const params = new url.URLSearchParams()
 		params.append('login', this.#config.user)
 		params.append('passwd', this.#secrets.passwd)
@@ -356,7 +362,6 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 		this.debug(
 			`Login request: ${JSON.stringify(loginRequest.statusText)}\n Returned Headers: \n${JSON.stringify(loginRequest.headers)}`,
 		)
-		return true
 	}
 
 	throttledCheckFeedbacksById = throttle(

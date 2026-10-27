@@ -69,6 +69,19 @@ export const HttpStatusCodes = {
 	511: InstanceStatus.AuthenticationFailure,
 } as const satisfies Record<number, InstanceStatus>
 
+/**
+ * Whether to retry a failed connection attempt.
+ *
+ * Before the credentials are sent, any failure is retried: nothing in the attempt can count towards the device's
+ * account and IP lockouts. From the login on, only a failure to get any response is retried, exactly the rule the
+ * module has always used. Any response could be the device rejecting the credentials, and as the API docs aren't
+ * reliable there is no way to tell which ones are safe to retry.
+ */
+export function shouldRetryConnection(err: unknown, credentialsSent: boolean): boolean {
+	if (!credentialsSent) return true
+	return axios.isAxiosError(err) && err.response === undefined
+}
+
 export function handleError(err: unknown, instance: ModuleInstance): void {
 	if (axios.isAxiosError(err)) {
 		handleAxiosError(err, instance)

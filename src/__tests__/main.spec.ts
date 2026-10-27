@@ -1,7 +1,29 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
+import type { EventEmitter } from 'node:events'
+import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios'
+import { InstanceStatus } from '@companion-module/base'
 import * as Main from '../main.js'
 import ModuleInstance from '../main.js'
 import { UpgradeScripts } from '../upgrades.js'
+import { ApiCalls } from '../api.js'
+import type { ModuleConfig, ModuleSecrets } from '../config.js'
+import type { StatusManager } from '../status.js'
+import { makeDeviceData } from './fixtures.js'
+
+interface FakeSocket extends EventEmitter {
+	readyState: number
+	open(): void
+}
+
+type Reply = () => Promise<unknown>
+
+/** The fake device: the WebSockets the module opened, the requests it made, and what it answers */
+const device = vi.hoisted(() => ({
+	sockets: [] as FakeSocket[],
+	/** Scripted replies per `METHOD path`, used in order. Once used up, the device answers normally */
+	replies: new Map<string, Reply[]>(),
+	requests: [] as string[],
+}))
 
 // Enough of InstanceBase to construct the module without a Companion host
 vi.mock('@companion-module/base', async (importOriginal) => {
@@ -18,6 +40,74 @@ vi.mock('@companion-module/base', async (importOriginal) => {
 	}
 	return { ...actual, InstanceBase }
 })
+
+vi.mock('axios-cookiejar-support', () => ({
+	wrapper: () => {
+		const request = async (method: string, path: string): Promise<unknown> => {
+			device.requests.push(`${method} ${path}`)
+			const scripted = device.replies.get(`${method} ${path}`)?.shift()
+			if (scripted) return await scripted()
+			return path === ApiCalls.Device ? ok(makeDeviceData()) : ok()
+		}
+		return {
+			get: async (path: string) => await request('GET', path),
+			post: async (path: string) => await request('POST', path),
+		}
+	},
+}))
+
+vi.mock('ws', async () => {
+	const { EventEmitter } = await import('node:events')
+	class WebSocket extends EventEmitter {
+		static OPEN = 1
+		readyState = 0
+		send = vi.fn((_data: string, cb: (err?: Error) => void) => cb())
+		terminate = vi.fn()
+		constructor() {
+			super()
+			device.sockets.push(this)
+		}
+		addEventListener(type: string, listener: (...args: unknown[]) => void): void {
+			this.on(type, listener)
+		}
+		open(): void {
+			this.readyState = 1
+			this.emit('open')
+		}
+	}
+	return { WebSocket }
+})
+
+function ok(data: unknown = '') {
+	return { data, status: 200, statusText: 'OK', headers: new AxiosHeaders() }
+}
+
+function httpError(status: number): AxiosError {
+	const response = { data: '', status, statusText: '', headers: new AxiosHeaders(), config: {} } as AxiosResponse
+	return new AxiosError(`Request failed with status code ${status}`, 'ERR_BAD_RESPONSE', undefined, {}, response)
+}
+
+/** The request went out but nothing came back, as when the device is unreachable */
+const noResponse = (): AxiosError => new AxiosError('connect ECONNREFUSED', 'ECONNREFUSED', undefined, {})
+
+/** A request the device accepts but never answers */
+const hang: Reply = async () => await new Promise(() => {})
+
+function reply(method: 'GET' | 'POST', path: string, ...replies: Reply[]): void {
+	device.replies.set(`${method} ${path}`, replies)
+}
+
+/** Each connection attempt starts by fetching the login page */
+const attempts = (): number => device.requests.filter((r) => r === `GET ${ApiCalls.login}`).length
+const logins = (): number => device.requests.filter((r) => r === `POST ${ApiCalls.login}`).length
+
+const CONFIG: ModuleConfig = { host: '192.0.2.1', user: 'companion', selfSigned: false, verbose: false }
+const SECRETS: ModuleSecrets = { passwd: 'secret' }
+
+/** Enough time for one connection attempt to get through the request queue, which runs one request per 50ms */
+const ATTEMPT = 500
+/** The delay before a failed attempt is retried */
+const RETRY = 5000
 
 afterEach(() => {
 	vi.useRealTimers()
@@ -58,5 +148,113 @@ describe('throttledUpdateActionFeedbackDefs', () => {
 
 		expect(checkAllFeedbacks).toHaveBeenCalledTimes(1)
 		expect(checkAllFeedbacks.mock.invocationCallOrder[0]).toBeGreaterThan(updateFeedbacks.mock.invocationCallOrder[0])
+	})
+})
+
+describe('connection', () => {
+	let instance: ModuleInstance
+	let updateStatus: MockInstance<StatusManager['updateStatus']>
+
+	beforeEach(() => {
+		vi.useFakeTimers()
+		device.sockets.length = 0
+		device.requests.length = 0
+		device.replies.clear()
+		instance = new ModuleInstance({})
+		updateStatus = vi.spyOn(instance.statusManager, 'updateStatus')
+	})
+	afterEach(async () => {
+		await instance.destroy()
+	})
+
+	async function start(config: ModuleConfig = CONFIG): Promise<void> {
+		await instance.init(config, true, SECRETS)
+		await vi.advanceTimersByTimeAsync(ATTEMPT)
+	}
+
+	describe('before the credentials are sent', () => {
+		// The login page used to be retried only if it got no response at all. An error status from it, as a
+		// device can give while it boots, ended the retries for good
+		it.each([503, 500, 404, 401])('retries when the login page answers %i', async (status) => {
+			reply('GET', ApiCalls.login, async () => await Promise.reject(httpError(status)))
+			await start()
+			expect(device.sockets).toHaveLength(0)
+
+			await vi.advanceTimersByTimeAsync(RETRY + ATTEMPT)
+			expect(attempts()).toBe(2)
+			expect(logins()).toBe(1)
+			expect(device.sockets).toHaveLength(1)
+		})
+
+		it('sends the credentials only once the login page has loaded', async () => {
+			reply('GET', ApiCalls.login, ...Array.from({ length: 5 }, () => async () => await Promise.reject(httpError(503))))
+			await start()
+			await vi.advanceTimersByTimeAsync(5 * (RETRY + ATTEMPT))
+			expect(attempts()).toBe(6)
+			expect(logins()).toBe(1)
+		})
+	})
+
+	describe('once the credentials are sent, exactly as before', () => {
+		// Any response from here on could be the device rejecting the credentials, and retrying those would count
+		// towards its lockouts. The API docs aren't reliable enough to say which responses are safe
+		it.each([
+			['the login', 'POST', ApiCalls.login, () => httpError(503)],
+			['the login', 'POST', ApiCalls.login, () => httpError(401)],
+			['the device query', 'GET', ApiCalls.Device, () => httpError(503)],
+			['the device query', 'GET', ApiCalls.Device, () => httpError(403)],
+		] as const)('does not retry when %s answers with an error', async (_stage, method, path, error) => {
+			reply(method, path, async () => await Promise.reject(error()))
+			await start()
+
+			await vi.advanceTimersByTimeAsync(60000)
+			expect(attempts()).toBe(1)
+			expect(logins()).toBe(1)
+		})
+
+		it('does not retry when the device data fails the schema', async () => {
+			reply('GET', ApiCalls.Device, async () => ok({ Device: {} }))
+			await start()
+
+			await vi.advanceTimersByTimeAsync(60000)
+			expect(attempts()).toBe(1)
+		})
+
+		it.each([
+			['the login', 'POST', ApiCalls.login],
+			['the device query', 'GET', ApiCalls.Device],
+		] as const)('retries when %s gets no response at all', async (_stage, method, path) => {
+			reply(method, path, async () => await Promise.reject(noResponse()))
+			await start()
+
+			await vi.advanceTimersByTimeAsync(RETRY + ATTEMPT)
+			expect(attempts()).toBe(2)
+			expect(device.sockets).toHaveLength(1)
+		})
+	})
+
+	it('does not retry without a host', async () => {
+		await start({ ...CONFIG, host: '' })
+
+		await vi.advanceTimersByTimeAsync(60000)
+		expect(attempts()).toBe(0)
+		expect(updateStatus).toHaveBeenCalledWith(InstanceStatus.BadConfig, 'No host')
+	})
+
+	it('does not let an attempt superseded by a config update schedule a retry of its own', async () => {
+		reply('GET', ApiCalls.login, hang)
+		// The new attempt takes longer than the retry delay, so a stray retry would start a third attempt alongside it
+		reply(
+			'GET',
+			ApiCalls.Device,
+			async () => await new Promise((resolve) => setTimeout(() => resolve(ok(makeDeviceData())), 8000)),
+		)
+		await start()
+
+		const updated = instance.configUpdated(CONFIG, SECRETS)
+		await vi.advanceTimersByTimeAsync(30000)
+		await updated
+		expect(attempts()).toBe(2)
+		expect(device.sockets).toHaveLength(1)
 	})
 })
