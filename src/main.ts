@@ -62,7 +62,7 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 	}
 
 	public debug(msg: string | object): void {
-		if (this.#config.verbose) {
+		if (this.#config?.verbose) {
 			if (typeof msg == 'object') msg = JSON.stringify(msg)
 			this.log('debug', `${msg}`)
 		}
